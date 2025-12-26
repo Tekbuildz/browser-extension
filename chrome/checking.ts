@@ -2,10 +2,10 @@ import {isHostScion} from "./background_helpers/request_interception_handler.js"
 import {clearTabResources} from "./shared/storage.js";
 import {safeHostname} from "./shared/utilities.js";
 
-const titleElement = document.getElementById("title");
-const spinnerElement = document.getElementById("spinner");
-const statusElement = document.getElementById('status');
-const originalUrlElement = document.getElementById('original-url');
+const titleElement = document.getElementById("title") as HTMLHeadingElement;
+const spinnerElement = document.getElementById("spinner") as HTMLDivElement;
+const statusElement = document.getElementById('status') as HTMLParagraphElement;
+const originalUrlElement = document.getElementById('original-url') as HTMLParagraphElement;
 
 async function init() {
     statusElement.textContent = 'Determining the original page you tried to open...';
@@ -30,12 +30,13 @@ async function init() {
         return;
     }
 
-    const currentTab = await chrome.tabs.getCurrent();
+    // cannot be undefined, as the call is always made from a tab context
+    const currentTab = (await chrome.tabs.getCurrent())!;
     // since a main_frame request switches the entire page to checking.html, it should be safe to assume the list of resources
     // requested by this tab can be overwritten
     // clearing the resources must be done here, as onBeforeRequest only handles it in non-globalStrictMode, this is in order
     // not to clear tab resources added via the isHostScion call below
-    await clearTabResources(currentTab.id);
+    if (currentTab.id && currentTab.id >= 0) await clearTabResources(currentTab.id);
     const isScion = await isHostScion(host, host, currentTab.id);
     if (!isScion) {
         statusElement.textContent = "This page is NOT SCION-capable and was blocked in strict mode.";
