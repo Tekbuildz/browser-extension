@@ -45,7 +45,8 @@ chrome.storage.onChanged.addListener(async (changes, namespace) => {
 
         } else if (changes.isd_whitelist?.newValue) {
 
-            geofence(changes.isd_whitelist.newValue);
+            const isdWhitelist = changes.isd_whitelist.newValue as string[];
+            geofence(isdWhitelist);
 
         } else if (changes.perSiteStrictMode?.newValue !== undefined) {
 
@@ -59,7 +60,8 @@ chrome.storage.onChanged.addListener(async (changes, namespace) => {
 
         } else if (changes.isd_all?.newValue !== undefined) {
 
-            allowAllgeofence(changes.isd_all.newValue);
+            const isdAll = changes.isd_all.newValue as boolean;
+            allowAllgeofence(isdAll);
 
         } else if (changes.proxyScheme || changes.proxyHost || changes.proxyPort) {
             // Reload all proxy settings if any changed
