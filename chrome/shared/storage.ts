@@ -11,7 +11,7 @@ export const PROXY_SCHEME = "proxyScheme" as const;
 export const PROXY_HOST = "proxyHost" as const;
 export const PROXY_PORT = "proxyPort" as const;
 
-type SyncValueSchema = {
+export type SyncValueSchema = {
     // proxy
     [AUTO_PROXY_CONFIG]: boolean;
     [PROXY_SCHEME]: string;
