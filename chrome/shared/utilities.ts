@@ -6,7 +6,7 @@
  * such as 'google.com', the proxy lookup is performed for that URL in the checking.html page but if the user is redirected to that page, this
  * URL might itself be redirected to 'www.google.com' which the extension no longer would recognise.
  */
-export function normalizedHostname(hostname) {
+export function normalizedHostname(hostname: string): string {
     return hostname.startsWith("www.") ? hostname.slice(4) : hostname;
 }
 
@@ -14,7 +14,7 @@ export function normalizedHostname(hostname) {
  * Safely extracts the hostname from the provided `url` and normalizes it via `normalizedHostname`.
  * If an error occurs during the extraction process, `null` is returned.
  */
-export function safeHostname(url) {
+export function safeHostname(url: string | URL): string | null {
     try {
         return url ? normalizedHostname(new URL(url).hostname) : null;
     } catch {
