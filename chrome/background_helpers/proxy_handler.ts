@@ -1,3 +1,12 @@
+import {getSyncValues, PROXY_HOST, PROXY_PORT, PROXY_SCHEME, saveSyncValues, type SyncValueSchema} from "../shared/storage.js";
+import Mode = chrome.proxy.Mode;
+
+type ProxyConfig = {
+    [PROXY_SCHEME]: SyncValueSchema[typeof PROXY_SCHEME];
+    [PROXY_HOST]: SyncValueSchema[typeof PROXY_HOST];
+    [PROXY_PORT]: SyncValueSchema[typeof PROXY_PORT];
+} | null;
+
 const HTTP_PROXY_SCHEME = "http"
 const HTTP_PROXY_PORT = "9080";
 export const HTTPS_PROXY_SCHEME = "https"
@@ -39,22 +48,22 @@ export function initializeProxyHandler() {
 }
 
 export function loadProxySettings() {
-    chrome.storage.sync.get({
-        proxyScheme: HTTPS_PROXY_SCHEME,
-        proxyHost: DEFAULT_PROXY_HOST,
-        proxyPort: HTTPS_PROXY_PORT
-    }, (items) => {
-        proxyScheme = items.proxyScheme;
-        proxyHost = items.proxyHost;
-        proxyPort = items.proxyPort;
+    getSyncValues({
+        [PROXY_SCHEME]: HTTPS_PROXY_SCHEME,
+        [PROXY_HOST]: DEFAULT_PROXY_HOST,
+        [PROXY_PORT]: HTTPS_PROXY_PORT,
+    }).then((items) => {
+        proxyScheme = items[PROXY_SCHEME];
+        proxyHost = items[PROXY_HOST];
+        proxyPort = items[PROXY_PORT];
         proxyAddress = `${proxyScheme}://${proxyHost}:${proxyPort}`;
 
         updateProxyConfiguration();
-    });
+    })
 }
 
 
-function parseProxyFromPAC(pacScript) {
+function parseProxyFromPAC(pacScript: string): ProxyConfig {
     // We look for the first HTTPS definition, if not found, we look for the first HTTP definition.
     const httpsProxyMatch = pacScript.match(/HTTPS\s+([^:]+):(\d+)/i);
     const httpProxyMatch = pacScript.match(/PROXY\s+([^:]+):(\d+)/i);
@@ -86,7 +95,7 @@ function parseProxyFromPAC(pacScript) {
     return null;
 }
 
-function isValidPort(port) {
+function isValidPort(port: string) {
     const portNum = parseInt(port, 10);
     return !isNaN(portNum) && portNum > 0 && portNum <= 65535;
 }
@@ -110,16 +119,16 @@ function fetchAndApplyScionPAC() {
                 proxyPort = proxyConfig.proxyPort;
                 proxyAddress = `${proxyScheme}://${proxyHost}:${proxyPort}`;
 
-                chrome.storage.sync.set({
-                    proxyScheme: proxyScheme,
-                    proxyHost: proxyHost,
-                    proxyPort: proxyPort
-                }, function() {
+                saveSyncValues({
+                    [PROXY_SCHEME]: proxyScheme,
+                    [PROXY_HOST]: proxyHost,
+                    [PROXY_PORT]: proxyPort,
+                }).then(() => {
                     console.log("Detected proxy configuration:", proxyAddress);
                 });
 
                 const config = {
-                    mode: "pac_script",
+                    mode: Mode.PAC_SCRIPT,
                     pacScript: {
                         data: pacScript
                     }
@@ -156,7 +165,7 @@ function fallbackToDefaults() {
     });
 }
 
-function tryProxyConnection(scheme, port) {
+function tryProxyConnection(scheme: string, port: string) {
     return new Promise(resolve => {
         const testUrl = `${scheme}://${DEFAULT_PROXY_HOST}:${port}${proxyHealthCheckPath}`;
         console.log(`Testing proxy connection to ${testUrl}`);
@@ -178,7 +187,7 @@ function tryProxyConnection(scheme, port) {
     });
 }
 
-function setProxyConfiguration(scheme, host, port) {
+function setProxyConfiguration(scheme: string, host: string, port: string) {
     proxyScheme = scheme;
     proxyHost = host;
     proxyPort = port;
@@ -199,7 +208,7 @@ function setProxyConfiguration(scheme, host, port) {
 // direct everything to the forward-proxy except if the target is the forward-proxy, then go direct
 function updateProxyConfiguration() {
     const config = {
-        mode: "pac_script",
+        mode: Mode.PAC_SCRIPT,
         pacScript: {
             data:
                 "function FindProxyForURL(url, host) {\n" +
