@@ -1,21 +1,41 @@
 import {handleTabChange} from "../background_helpers/tab_handler.js";
 
+// ===== SYNC STORAGE =====
 export const GLOBAL_STRICT_MODE = "globalStrictMode" as const;
 export const PER_SITE_STRICT_MODE = "perSiteStrictMode" as const;
 export const ISD_WHITELIST = "isd_whitelist" as const;
 export const ISD_ALL = "isd_all" as const;
 export const EXTENSION_RUNNING = "extension_running" as const;
+export const AUTO_PROXY_CONFIG = "auto-proxy-config" as const;
+export const PROXY_SCHEME = "proxyScheme" as const;
+export const PROXY_HOST = "proxyHost" as const;
+export const PROXY_PORT = "proxyPort" as const;
 
 type SyncValueSchema = {
+    // proxy
+    [AUTO_PROXY_CONFIG]: boolean;
+    [PROXY_SCHEME]: string;
+    [PROXY_HOST]: string;
+    [PROXY_PORT]: string;
+
+    // strict modes
     [GLOBAL_STRICT_MODE]: boolean;
     [PER_SITE_STRICT_MODE]: Record<string, boolean>;
+
+    // ISDs
     [ISD_WHITELIST]: string[];
     [ISD_ALL]: boolean;
+
+    // misc.
     [EXTENSION_RUNNING]: boolean;
 };
+// ========================
 
+// ===== SESSION STORAGE =====
 type SessionValueSchema = Record<string, boolean>;
+// ===========================
 
+// ===== LOCAL STORAGE =====
 const REQUESTS = "requests" as const;
 export const REQUEST_ID = "requestId" as const;
 export const TAB_ID = "tabId" as const;
@@ -39,6 +59,7 @@ type RequestsSchema = {
 type LocalValueSchema = {
     [REQUESTS]: string;
 };
+// =========================
 
 // ===== LOCAL STORAGE TAB RESOURCES =====
 /*
@@ -222,9 +243,43 @@ export async function saveSyncValue<K extends keyof SyncValueSchema>(key: K, val
     await chrome.storage.sync.set({[key]: value});
 }
 
-export async function getSyncValue<K extends keyof SyncValueSchema>(key: K): Promise<SyncValueSchema[K] | undefined> {
+export async function getSyncValue<K extends keyof SyncValueSchema>(key: K): Promise<SyncValueSchema[K] | undefined>;
+export async function getSyncValue<K extends keyof SyncValueSchema>(key: K, fallback: SyncValueSchema[K]) : Promise<SyncValueSchema[K]>;
+
+export async function getSyncValue<K extends keyof SyncValueSchema>(key: K, fallback?: SyncValueSchema[K]): Promise<SyncValueSchema[K] | undefined> {
     const result = await chrome.storage.sync.get([key]);
-    return result[key] as SyncValueSchema[K] | undefined;
+    if (result) return result[key] as SyncValueSchema[K];
+    return fallback;
+}
+
+export async function saveSyncValues<K extends keyof SyncValueSchema>(keyValuePairs: Partial<Record<K, SyncValueSchema[K]>>) {
+    await chrome.storage.sync.set(keyValuePairs);
+}
+
+/**
+ * Accesses the `chrome.storage.sync` storage for multiple keys at once. For each key, a fallback value must be provided.
+ *
+ * NOTE: The `Pick` syntax is used to ensure that entries, for which a key/fallback pair was provided are not marked as possibly undefined
+ * when accessing them from the returned object. (see annotation in example)
+ *
+ * @param keysWithFallbacks a dictionary mapping the keys that are being requested to their fallback values.
+ * @example
+ *  getStorageValues({
+ *      [SyncStorageEntry.ProxyScheme]: DEFAULT_HTTPS_PROXY_SCHEME,
+ *      [SyncStorageEntry.ProxyHost]: DEFAULT_PROXY_HOST,
+ *      [SyncStorageEntry.ProxyPort]: DEFAULT_HTTPS_PROXY_PORT,
+ *  }).then(async (items) => {
+ *      let proxyHost = items[SyncStorageEntry.ProxyHost]; // <-- e.g. here, by using Pick, proxyHost is not 'string | undefined' but just 'string'
+ *      let proxyPort = items[SyncStorageEntry.ProxyPort];
+ *      let proxyScheme = items[SyncStorageEntry.ProxyScheme];
+ *  });
+ */
+export async function getSyncValues<K extends keyof SyncValueSchema>(keysWithFallbacks: Pick<SyncValueSchema, K>): Promise<Pick<SyncValueSchema, K>> {
+    const keys = Object.keys(keysWithFallbacks) as K[];
+    const storage = (await chrome.storage.sync.get(keys)) as Partial<Pick<SyncValueSchema, K>>;
+    const result = {} as Pick<SyncValueSchema, K>;
+    for (const key of keys) result[key] = storage[key] ?? keysWithFallbacks[key];
+    return result;
 }
 
 async function saveLocalValue<K extends keyof LocalValueSchema>(key: K, value: LocalValueSchema[K]) {

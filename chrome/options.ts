@@ -5,24 +5,37 @@
 'use strict';
 
 // Default proxy configuration values
-import {getSyncValue, GLOBAL_STRICT_MODE, ISD_ALL, ISD_WHITELIST, PER_SITE_STRICT_MODE, saveSyncValue} from "./shared/storage.js";
-import {DEFAULT_PROXY_HOST, HTTPS_PROXY_SCHEME, HTTPS_PROXY_PORT} from "./background_helpers/proxy_handler.js";
+import {
+    AUTO_PROXY_CONFIG,
+    getSyncValue,
+    getSyncValues,
+    GLOBAL_STRICT_MODE,
+    ISD_ALL,
+    ISD_WHITELIST,
+    PER_SITE_STRICT_MODE,
+    PROXY_HOST,
+    PROXY_PORT,
+    PROXY_SCHEME,
+    saveSyncValue,
+    saveSyncValues
+} from "./shared/storage.js";
+import {DEFAULT_PROXY_HOST, HTTPS_PROXY_PORT, HTTPS_PROXY_SCHEME} from "./background_helpers/proxy_handler.js";
 
 const DEFAULT_PROXY_SCHEME = HTTPS_PROXY_SCHEME;
 const DEFAULT_PROXY_PORT = HTTPS_PROXY_PORT;
 
-const toggleGlobalStrict = document.getElementById('toggleGlobalStrict');
-const checkboxGlobalStrict = document.getElementById('checkboxGlobalStrict');
-const lineStrictMode = document.getElementById('lineStrictMode');
-const tableSitePreferences = document.getElementById('tableBodySitePreferences');
-const checkBoxNewDomainStrictMode = document.getElementById('checkBoxNewDomainStrictMode');
-const toggleNewDomainStrictMode = document.getElementById('toggleNewDomainStrictMode');
-const lineNewDomainStrictMode = document.getElementById('lineNewDomainStrictMode');
-const inputNewDomain = document.getElementById('inputNewDomain');
-const scionMode = document.getElementById('scionmode');
-const proxySchemeElement = document.getElementById('proxy-scheme');
-const proxyHostElement = document.getElementById('proxy-host');
-const proxyPortElement = document.getElementById('proxy-port');
+const toggleGlobalStrict = document.getElementById('toggleGlobalStrict') as HTMLInputElement;
+const checkboxGlobalStrict = document.getElementById('checkboxGlobalStrict') as HTMLDivElement;
+const lineStrictMode = document.getElementById('lineStrictMode') as HTMLDivElement;
+const tableSitePreferences = document.getElementById('tableBodySitePreferences')!;
+const checkBoxNewDomainStrictMode = document.getElementById('checkBoxNewDomainStrictMode') as HTMLDivElement;
+const toggleNewDomainStrictMode = document.getElementById('toggleNewDomainStrictMode') as HTMLInputElement;
+const lineNewDomainStrictMode = document.getElementById('lineNewDomainStrictMode') as HTMLDivElement;
+const inputNewDomain = document.getElementById('inputNewDomain') as HTMLInputElement;
+const scionMode = document.getElementById('scionmode') as HTMLSpanElement;
+const proxySchemeElement = document.getElementById('proxy-scheme') as HTMLSelectElement;
+const proxyHostElement = document.getElementById('proxy-host') as HTMLInputElement;
+const proxyPortElement = document.getElementById('proxy-port') as HTMLInputElement;
 
 
 const tableSitePreferencesRow = ` 
@@ -45,64 +58,64 @@ const tableSitePreferencesRow = `
 const placeholderToggleID = "toggleISD-";
 
 document.addEventListener("DOMContentLoaded", async () => {
-    const isdSet = await getSyncValue(ISD_WHITELIST);
+    const isdSet = await getSyncValue(ISD_WHITELIST, []);
     displayToggleISD(isdSet);
 
-    document.getElementById("allowAllTrafficToggle").checked = await getSyncValue(ISD_ALL);
+    const trafficToggle = document.getElementById("allowAllTrafficToggle") as HTMLInputElement;
+    trafficToggle.checked = await getSyncValue(ISD_ALL, true);
 
     registerToggleISDHandler();
     registerToggleAllHandler();
 });
 
-function displayToggleISD(isdSet) {
+function displayToggleISD(isdSet: string[]) {
     if (!isdSet) {
         return;
     }
     for (const id of isdSet) {
-        var isdToggle = document.getElementById(placeholderToggleID + id);
-        if (isdToggle) {
-            isdToggle.checked = true;
-        }
+        const isdToggle = document.getElementById(placeholderToggleID + id) as HTMLInputElement;
+        if (isdToggle) isdToggle.checked = true;
     }
 }
 
 function registerToggleISDHandler() {
-    const idsToggles = document.getElementsByClassName("isd-entry");
-    for (let i = 0; i < idsToggles.length; i++) {
-        const parentDiv = idsToggles[i].parentElement;
+    const isdToggles = document.getElementsByClassName("isd-entry");
+    for (let i = 0; i < isdToggles.length; i++) {
+        const isdToggle = isdToggles[i] as HTMLInputElement;
+        const parentDiv = isdToggle.parentElement!;
         parentDiv.onclick = () => {
-            toggleISD(idsToggles[i].id);
+            toggleISD(isdToggles[i].id);
         }
     }
-};
+}
 
 
 function registerToggleAllHandler() {
-    const allToggle = document.getElementById("allowAllTrafficToggle");
+    const allToggle = document.getElementById("allowAllTrafficToggle") as HTMLInputElement;
     console.log(allToggle)
-    const parentDiv = allToggle.parentElement;
+    const parentDiv = allToggle.parentElement!;
     parentDiv.onclick = () => {
         toggleAll(allToggle.id);
     }
-};
+}
 
-function toggleISD(checked_id) {
-    var isdToggle = document.getElementById(checked_id);
+function toggleISD(checked_id: string) {
+    const isdToggle = document.getElementById(checked_id) as HTMLInputElement;
     isdToggle.checked = !isdToggle.checked;
-    var id = checked_id.split("toggleISD-")[1];
+    const id = checked_id.split("toggleISD-")[1]!;
     applyWhitelist(id, isdToggle.checked);
 }
 
-async function toggleAll(checked_id) {
-    var isdToggle = document.getElementById(checked_id);
+async function toggleAll(checked_id: string) {
+    const isdToggle = document.getElementById(checked_id) as HTMLInputElement;
     isdToggle.checked = !isdToggle.checked;
     console.log(isdToggle.checked)
     await saveSyncValue(ISD_ALL, isdToggle.checked);
 }
 
 
-async function applyWhitelist(isd, checked) {
-    const isdList = await getSyncValue(ISD_WHITELIST);
+async function applyWhitelist(isd: string, checked: boolean) {
+    const isdList = await getSyncValue(ISD_WHITELIST, []);
     const isdSet = await toSet(removeEmptyEntries(isdList));
     if (checked) {
         isdSet.add(isd);
@@ -116,23 +129,24 @@ async function applyWhitelist(isd, checked) {
     console.log([...isdSet_1]);
 }
 
-function removeEmptyEntries(list) {
+function removeEmptyEntries<T>(list: T[]): T[] {
     if (!list) {
         return list;
     }
-    return list.filter(l => !!l);
+    return list.filter((l: T) => !!l);
 }
 
 /* Optional Javascript to close the radio button version by clicking it again */
-var myRadios = document.getElementsByName('tabs2');
-var setCheck;
-var x = 0;
+const myRadios = document.getElementsByName('tabs2') as NodeListOf<HTMLInputElement>;
+let setCheck: HTMLInputElement | null = null;
+let x: number;
 for (x = 0; x < myRadios.length; x++) {
-    myRadios[x].onclick = function () {
-        if (setCheck != this) {
-            setCheck = this;
+    const radio: HTMLInputElement = myRadios[x]!;
+    radio.onclick = function () {
+        if (setCheck != radio) {
+            setCheck = radio;
         } else {
-            this.checked = false;
+            radio.checked = false;
             setCheck = null;
         }
     };
@@ -148,8 +162,8 @@ function toggleGlobalStrictMode() {
     saveSyncValue(GLOBAL_STRICT_MODE, toggleGlobalStrict.checked);
 }
 
-getSyncValue(GLOBAL_STRICT_MODE).then(val => {
-    toggleGlobalStrict.checked = val;
+getSyncValue(GLOBAL_STRICT_MODE, false).then(globalStrictMode => {
+    toggleGlobalStrict.checked = globalStrictMode;
     if (toggleGlobalStrict.checked) {
         lineStrictMode.style.backgroundColor = '#48bb78';
     } else {
@@ -158,7 +172,7 @@ getSyncValue(GLOBAL_STRICT_MODE).then(val => {
 });
 
 function updateSitePreferences() {
-    getSyncValue(PER_SITE_STRICT_MODE).then(perSiteStrictMode => {
+    getSyncValue(PER_SITE_STRICT_MODE, {}).then(perSiteStrictMode => {
         tableSitePreferences.innerHTML = '';
         Object.keys(perSiteStrictMode || {}).forEach(k => {
             let row = tableSitePreferencesRow.replaceAll("{site}", k);
@@ -176,49 +190,46 @@ updateSitePreferences();
 function registerToggleSitePreferenceHandler() {
     const toggles = document.getElementsByClassName("site-pref-entry");
     for (let i = 0; i < toggles.length; i++) {
-        const parentDiv = toggles[i].parentElement;
+        const toggle = toggles[i]!;
+        const parentDiv = toggle.parentElement!;
         parentDiv.onclick = () => {
             toggleSitePreference(toggles[i].id);
         }
     }
-};
+}
 
-function toggleSitePreference(checked_id) {
-    const isdToggle = document.getElementById(checked_id);
+function toggleSitePreference(checked_id: string) {
+    const isdToggle = document.getElementById(checked_id) as HTMLInputElement;
     isdToggle.checked = !isdToggle.checked;
-    const domain = checked_id.split("toggleSite-")[1];
-    getSyncValue(PER_SITE_STRICT_MODE).then(val => {
-        val[domain] = isdToggle.checked;
-        saveSyncValue(PER_SITE_STRICT_MODE, val).then(() => {
+    const domain = checked_id.split("toggleSite-")[1]!;
+    getSyncValue(PER_SITE_STRICT_MODE, {}).then(perSiteStrictMode => {
+        perSiteStrictMode[domain] = isdToggle.checked;
+        saveSyncValue(PER_SITE_STRICT_MODE, perSiteStrictMode).then(() => {
             updateSitePreferences();
         });
     });
 }
 
-document.getElementById('checkboxGlobalStrict')
-    .addEventListener('click', function () {
-        toggleGlobalStrictMode();
-    });
+checkboxGlobalStrict.addEventListener('click', function () {
+    toggleGlobalStrictMode();
+});
 
-buttonAddHostname
-    .addEventListener('click', function () {
-        const domain = document.getElementById('inputNewDomain').value;
-        const strictMode = !!toggleNewDomainStrictMode.checked;
-        getSyncValue(PER_SITE_STRICT_MODE).then(val => {
-            let perSiteStrictMode = {};
-            if (val) {
-                perSiteStrictMode = val;
-            }
-            perSiteStrictMode[domain] = strictMode;
-            saveSyncValue(PER_SITE_STRICT_MODE, perSiteStrictMode).then(() => {
-                updateSitePreferences();
-                toggleNewDomainStrictMode.checked = false;
-                inputNewDomain.value = '';
-                lineNewDomainStrictMode.style.backgroundColor = '';
-                scionMode.innerHTML = 'when available';
-            });
+const addHostnameButton = document.getElementById("buttonAddHostname") as HTMLButtonElement;
+addHostnameButton.addEventListener('click', function () {
+    const newDomainInput = document.getElementById('inputNewDomain') as HTMLInputElement;
+    const domain = newDomainInput.value;
+    const strictMode = toggleNewDomainStrictMode.checked;
+    getSyncValue(PER_SITE_STRICT_MODE, {}).then(perSiteStrictMode => {
+        perSiteStrictMode[domain] = strictMode;
+        saveSyncValue(PER_SITE_STRICT_MODE, perSiteStrictMode).then(() => {
+            updateSitePreferences();
+            toggleNewDomainStrictMode.checked = false;
+            inputNewDomain.value = '';
+            lineNewDomainStrictMode.style.backgroundColor = '';
+            scionMode.innerHTML = 'when available';
         });
     });
+});
 
 checkBoxNewDomainStrictMode
     .addEventListener('click', function () {
@@ -232,8 +243,10 @@ checkBoxNewDomainStrictMode
         }
     });
 
-function updateProxyFormState(isAutoConfig) {
-    const manualControls = document.querySelectorAll('#manual-proxy-settings input, #manual-proxy-settings select, #manual-proxy-settings button, #reset-proxy-defaults');
+function updateProxyFormState(isAutoConfig: boolean) {
+    const manualControls = document.querySelectorAll(
+        '#manual-proxy-settings input, #manual-proxy-settings select, #manual-proxy-settings button, #reset-proxy-defaults'
+    ) as NodeListOf<HTMLInputElement | HTMLSelectElement | HTMLButtonElement>;
     
     manualControls.forEach(element => {
       element.disabled = isAutoConfig;
@@ -251,27 +264,27 @@ function updateProxyFormState(isAutoConfig) {
 
 // Load saved settings
 document.addEventListener('DOMContentLoaded', function() {
-    chrome.storage.sync.get({
-      proxyScheme: 'https',
-      proxyHost: 'forward-proxy.scion',
-      proxyPort: '9443'
-    }, function(items) {
-      proxySchemeElement.value = items.proxyScheme;
-      proxyHostElement.value = items.proxyHost;
-      proxyPortElement.value = items.proxyPort;
+    getSyncValues({
+        [PROXY_SCHEME]: "https",
+        [PROXY_HOST]: "forward-proxy.scion",
+        [PROXY_PORT]: "9443",
+    }).then((items) => {
+        proxySchemeElement.value = items[PROXY_SCHEME];
+        proxyHostElement.value = items[PROXY_HOST];
+        proxyPortElement.value = items[PROXY_PORT];
     });
 
-    chrome.storage.sync.get({
-        autoProxyConfig: true
-    }, function(items) {
-        document.getElementById('auto-proxy-config').checked = items.autoProxyConfig;
-        updateProxyFormState(items.autoProxyConfig);
+    const saveProxySettingsButton = document.getElementById('save-proxy-settings') as HTMLButtonElement;
+    const resetProxyDefaultsButton = document.getElementById('reset-proxy-defaults') as HTMLButtonElement;
+    const autoProxyConfigInput = document.getElementById('auto-proxy-config') as HTMLInputElement;
+    getSyncValue(AUTO_PROXY_CONFIG, true).then(autoProxyConfig => {
+        autoProxyConfigInput.checked = autoProxyConfig;
+        updateProxyFormState(autoProxyConfig);
     });
-    
-    document.getElementById('save-proxy-settings').addEventListener('click', saveProxySettings);
-    document.getElementById('reset-proxy-defaults').addEventListener('click', resetProxyDefaults);
-    document.getElementById('auto-proxy-config').addEventListener('change', saveAutoProxyConfig);
 
+    saveProxySettingsButton.addEventListener('click', saveProxySettings);
+    resetProxyDefaultsButton.addEventListener('click', resetProxyDefaults);
+    autoProxyConfigInput.addEventListener('change', saveAutoProxyConfig);
 });
   
 function saveProxySettings() {
@@ -285,20 +298,20 @@ function saveProxySettings() {
         return;
     }
 
-    chrome.storage.sync.set({
-        proxyScheme: scheme,
-        proxyHost: host,
-        proxyPort: port
-    }, function() {
+    saveSyncValues({
+        [PROXY_SCHEME]: scheme,
+        [PROXY_HOST]: host,
+        [PROXY_PORT]: port,
+    }).then(() => {
         // Show saved message
-        const saveButton = document.getElementById('save-proxy-settings');
+        const saveButton = document.getElementById('save-proxy-settings') as HTMLButtonElement;
         const originalText = saveButton.textContent;
         saveButton.textContent = 'Settings Saved!';
         saveButton.disabled = true;
-        
+
         setTimeout(function() {
-        saveButton.textContent = originalText;
-        saveButton.disabled = false;
+            saveButton.textContent = originalText;
+            saveButton.disabled = false;
         }, 1500);
     });
 }
@@ -309,17 +322,19 @@ function resetProxyDefaults() {
 }
 
 function saveAutoProxyConfig() {
-    const autoConfig = document.getElementById('auto-proxy-config').checked;
-    
-    chrome.storage.sync.set({
-      autoProxyConfig: autoConfig
-    }, function() {
-      updateProxyFormState(autoConfig);
-    });
-  }
+    const autoProxyConfigInput = document.getElementById('auto-proxy-config') as HTMLInputElement;
+    const autoConfig = autoProxyConfigInput.checked;
 
-function toSet(key) {
+    saveSyncValue(AUTO_PROXY_CONFIG, autoConfig).then(() => updateProxyFormState(autoConfig));
+}
+
+/**
+ * Converts a given array into its `Set` representation.
+ * @typeParam T the type of item inside the array/set.
+ * @param array the array to be converted into a set.
+ */
+function toSet<T>(array: T[]): Promise<Set<T>> {
     return new Promise(resolve => {
-        resolve(new Set(key));
+        resolve(new Set(array));
     });
 }
