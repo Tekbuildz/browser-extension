@@ -1,6 +1,9 @@
-import {getRequests, getSyncValue, GLOBAL_STRICT_MODE, PER_SITE_STRICT_MODE} from "../shared/storage.js";
+import {DOMAIN, getRequests, getSyncValue, GLOBAL_STRICT_MODE, PER_SITE_STRICT_MODE, type RequestSchema, type SyncValueSchema} from "../shared/storage.js";
 import {proxyAddress, proxyHost, proxyURLResolveParam, proxyURLResolvePath, WPAD_URL} from "./proxy_handler.js";
 import {isHostScion} from "./request_interception_handler.js";
+import ResourceType = chrome.declarativeNetRequest.ResourceType;
+
+type Rule = chrome.declarativeNetRequest.Rule;
 
 /*
 General DNR (DeclarativeNetRequest) strategy:
@@ -33,16 +36,32 @@ const SUBRESOURCES_REDIRECT_RULE_ID = 3;
 const BLOCK_RULE_START_ID = 10000;
 
 const EXT_PAGE = chrome.runtime.getURL('/checking.html');
-const ALL_RESOURCE_TYPES = ["main_frame", "sub_frame", "xmlhttprequest", "script", "image", "font", "media", "stylesheet", "object", "other", "ping", "websocket", "webtransport"];
-const MAIN_FRAME_TYPE = ["main_frame"];
-const SUBRESOURCE_TYPES = ["sub_frame", "xmlhttprequest", "script", "image", "font", "media", "stylesheet", "object", "other", "ping", "websocket", "webtransport"];
+
+const MAIN_FRAME_TYPE: ResourceType[] = [ResourceType.MAIN_FRAME];
+const SUBRESOURCE_TYPES = [
+    ResourceType.SUB_FRAME,
+    ResourceType.XMLHTTPREQUEST,
+    ResourceType.SCRIPT,
+    ResourceType.IMAGE,
+    ResourceType.FONT,
+    ResourceType.MEDIA,
+    ResourceType.STYLESHEET,
+    ResourceType.OBJECT,
+    ResourceType.OTHER,
+    ResourceType.PING,
+    ResourceType.WEBSOCKET,
+    ResourceType.WEBTRANSPORT,
+    ResourceType.WEBBUNDLE,
+    ResourceType.CSP_REPORT,
+];
+const ALL_RESOURCE_TYPES =  MAIN_FRAME_TYPE.concat(SUBRESOURCE_TYPES);
 
 /**
  * Initializes the DNR handler.
  *
  * Note that since this function is called from the service worker and these are ephemeral in MV3, this function will be called quite often (e.g. when the user opens a new tab).
  */
-export async function initializeDnr(globalStrictMode) {
+export async function initializeDnr(globalStrictMode: boolean) {
     console.log("Initializing DNR");
 
     await setGlobalStrictMode(globalStrictMode);
@@ -52,7 +71,7 @@ export async function initializeDnr(globalStrictMode) {
  * Function that enforces the global strict mode based on the boolean value passed in `globalStrictMode` by
  * installing DNR rules.
  */
-export async function setGlobalStrictMode(globalStrictMode) {
+export async function setGlobalStrictMode(globalStrictMode: boolean) {
     if (globalStrictMode) {
         await withLock(async () => {
             await removeAllDnrBlockRules();
@@ -85,21 +104,21 @@ export async function setGlobalStrictMode(globalStrictMode) {
 /**
  * Updates the DNR rules to handle individual strict sites (which are based on the `perSiteStrictMode` parameter).
  */
-export async function setPerSiteStrictMode(perSiteStrictMode) {
+export async function setPerSiteStrictMode(perSiteStrictMode: SyncValueSchema[typeof PER_SITE_STRICT_MODE]) {
     // if globalStrictMode is on, do not change any DNR rules
-    const globalStrictMode = await getSyncValue(GLOBAL_STRICT_MODE);
+    const globalStrictMode = await getSyncValue(GLOBAL_STRICT_MODE, false);
     if (globalStrictMode) return;
 
     await withLock(async () => {
         const [allowedHostsWithId, blockedHostsWithId] = await getAllowedAndBlockedHostsWithId();
 
         await removeAllDnrBlockRules();
-        const strictHosts = Object.entries(perSiteStrictMode)
+        const strictHosts: string[] = Object.entries(perSiteStrictMode)
             .filter(([, isStrict]) => isStrict)
             .map(([host]) => host);
 
         // adding rules that block each of the hosts directly
-        let rules = [];
+        let rules: Rule[] = [];
         for (const strictHost of strictHosts) {
             // if the extension has info about the host, add the appropriate DNR rule, otherwise perform a lookup
             if (Object.keys(blockedHostsWithId).includes(strictHost)) rules.push(createBlockRule(strictHost, blockedHostsWithId[strictHost]));
@@ -126,7 +145,7 @@ export async function setPerSiteStrictMode(perSiteStrictMode) {
 /**
  * Based on `scionEnabled` creates a DNR allow or block rule for the `host`.
  */
-export async function addDnrRule(host, scionEnabled, alreadyHasLock) {
+export async function addDnrRule(host: string, scionEnabled: boolean, alreadyHasLock: boolean) {
     const run = async () => {
         const id = (await getNFreeIds(1))[0];
         const rule = scionEnabled ? createAllowRule(host, id) : createBlockRule(host, id);
@@ -156,7 +175,7 @@ export async function removeAllDnrBlockRules(customRulesToRemoveIds = null) {
     await chrome.declarativeNetRequest.updateDynamicRules({addRules: [], removeRuleIds: rulesToRemoveIds});
 }
 
-function createBlockRule(host, id) {
+function createBlockRule(host: string, id: number): Rule {
     return {
         id: id,
         priority: 100,
@@ -168,7 +187,7 @@ function createBlockRule(host, id) {
     };
 }
 
-function createAllowRule(host, id) {
+function createAllowRule(host: string, id: number): Rule {
     return {
         id: id,
         priority: 101,
@@ -183,7 +202,7 @@ function createAllowRule(host, id) {
 /**
  * Returns a DNR rule that redirects all `main_frame` requests to the `checking.html` page for a synchronous blocking lookup.
  */
-function createMainFrameRedirectRule(id) {
+function createMainFrameRedirectRule(id: number): Rule {
     return {
         id: id,
         priority: id,
@@ -204,7 +223,7 @@ function createMainFrameRedirectRule(id) {
 /**
  * Returns a DNR rule that redirects all sub-resources to the proxy `proxyURLResolvePath` endpoint.
  */
-function createSubResourcesRedirectRule(id) {
+function createSubResourcesRedirectRule(id: number): Rule {
     return {
         id: id,
         priority: id,
@@ -230,7 +249,7 @@ function createSubResourcesRedirectRule(id) {
 /**
  * Returns a DNR rule that redirects all sub-resources whose initiator is in `blockedInitiators` to the `proxyURLResolvePath` endpoint.
  */
-function createSubResourcesInitiatorRedirectRule(id, blockedInitiators) {
+function createSubResourcesInitiatorRedirectRule(id: number, blockedInitiators: string[]): Rule {
     return {
         id: id,
         priority: id,
@@ -261,15 +280,15 @@ function createSubResourcesInitiatorRedirectRule(id, blockedInitiators) {
  * Note that this function is unsafe and must be wrapped with `withLock`.
  */
 async function getAllowedAndBlockedHostsWithId() {
-    const requests = await getRequests();
-    let allowedHostsWithId = {};
-    let blockedHostsWithId = {};
-    const freeIds = await getNFreeIds(requests.length);
+    const requests: RequestSchema[] = await getRequests();
+    let allowedHostsWithId: Record<string, number> = {};
+    let blockedHostsWithId: Record<string, number> = {};
+    const freeIds: number[] = await getNFreeIds(requests.length);
 
-    let i = 0;
+    let i: number = 0;
     for (const request of requests) {
-        if (request.scionEnabled) allowedHostsWithId[request.domain] = freeIds[i];
-        else blockedHostsWithId[request.domain] = freeIds[i];
+        if (request.scionEnabled) allowedHostsWithId[request[DOMAIN]] = freeIds[i];
+        else blockedHostsWithId[request[DOMAIN]] = freeIds[i];
         i++;
     }
 
@@ -281,8 +300,8 @@ async function getAllowedAndBlockedHostsWithId() {
  *
  * Note that this function is unsafe and must be wrapped with `withLock`.
  */
-async function getNFreeIds(n) {
-    const currentRules = await chrome.declarativeNetRequest.getDynamicRules();
+async function getNFreeIds(n: number): Promise<number[]> {
+    const currentRules: Rule[] = await chrome.declarativeNetRequest.getDynamicRules();
     const usedIds = new Set(currentRules.map(rule => rule.id));
     const idList = new Set(Array.from({length: n + usedIds.size}, (_, i) => i + BLOCK_RULE_START_ID));
     return Array.from(idList.difference(usedIds));
@@ -293,7 +312,7 @@ async function getNFreeIds(n) {
  */
 let idLock = Promise.resolve();
 
-function withLock(fn) {
+function withLock(fn: (() => void | PromiseLike<void>)) {
     // chain the new work onto the previous one
     const p = idLock.then(fn, fn);
     // ensure errors don’t break the chain forever

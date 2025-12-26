@@ -3,7 +3,7 @@
 
 import {initializeProxyHandler, loadProxySettings} from "./background_helpers/proxy_handler.js";
 import {allowAllgeofence, geofence, resetPolicyCookie} from "./background_helpers/geofence_handler.js";
-import {EXTENSION_RUNNING, getSyncValue, GLOBAL_STRICT_MODE, saveSyncValue} from "./shared/storage.js";
+import {EXTENSION_RUNNING, getSyncValue, GLOBAL_STRICT_MODE, ISD_ALL, ISD_WHITELIST, PER_SITE_STRICT_MODE, saveSyncValue, type SyncValueSchema} from "./shared/storage.js";
 import {initializeDnr, setGlobalStrictMode, setPerSiteStrictMode} from "./background_helpers/dnr_handler.js";
 import {initializeRequestInterceptionListeners} from "./background_helpers/request_interception_handler.js";
 import {initializeTabListeners} from "./background_helpers/tab_handler.js";
@@ -43,25 +43,27 @@ chrome.storage.onChanged.addListener(async (changes, namespace) => {
 
             await updateRunningIcon(changes.extension_running.newValue);
 
+        } else if (changes.isd_all?.newValue !== undefined) {
+
+            const isdAll = changes.isd_all.newValue as SyncValueSchema[typeof ISD_ALL];
+            allowAllgeofence(isdAll);
+
         } else if (changes.isd_whitelist?.newValue) {
 
-            const isdWhitelist = changes.isd_whitelist.newValue as string[];
+            const isdWhitelist = changes.isd_whitelist.newValue as SyncValueSchema[typeof ISD_WHITELIST];
             geofence(isdWhitelist);
 
         } else if (changes.perSiteStrictMode?.newValue !== undefined) {
 
             // update DNR rules
-            await setPerSiteStrictMode(changes.perSiteStrictMode.newValue || {});
+            const perSiteStrictMode = (changes.isd_whitelist.newValue || {}) as SyncValueSchema[typeof PER_SITE_STRICT_MODE];
+            await setPerSiteStrictMode(perSiteStrictMode);
 
         } else if (changes.globalStrictMode?.newValue !== undefined) {
 
             // update DNR rules
-            await setGlobalStrictMode(changes.globalStrictMode.newValue);
-
-        } else if (changes.isd_all?.newValue !== undefined) {
-
-            const isdAll = changes.isd_all.newValue as boolean;
-            allowAllgeofence(isdAll);
+            const globalStrictMode = changes.globalStrictMode.newValue as SyncValueSchema[typeof GLOBAL_STRICT_MODE];
+            await setGlobalStrictMode(globalStrictMode);
 
         } else if (changes.proxyScheme || changes.proxyHost || changes.proxyPort) {
             // Reload all proxy settings if any changed
