@@ -1,10 +1,44 @@
 import {handleTabChange} from "../background_helpers/tab_handler.js";
 
-export const GLOBAL_STRICT_MODE = "globalStrictMode";
-export const PER_SITE_STRICT_MODE = "perSiteStrictMode";
-export const ISD_WHITELIST = "isd_whitelist";
-export const ISD_ALL = "isd_all";
-export const EXTENSION_RUNNING = "extension_running";
+export const GLOBAL_STRICT_MODE = "globalStrictMode" as const;
+export const PER_SITE_STRICT_MODE = "perSiteStrictMode" as const;
+export const ISD_WHITELIST = "isd_whitelist" as const;
+export const ISD_ALL = "isd_all" as const;
+export const EXTENSION_RUNNING = "extension_running" as const;
+
+type SyncValueSchema = {
+    [GLOBAL_STRICT_MODE]: boolean;
+    [PER_SITE_STRICT_MODE]: Record<string, boolean>;
+    [ISD_WHITELIST]: string[];
+    [ISD_ALL]: boolean;
+    [EXTENSION_RUNNING]: boolean;
+};
+
+type SessionValueSchema = Record<string, boolean>;
+
+const REQUESTS = "requests" as const;
+export const REQUEST_ID = "requestId" as const;
+export const TAB_ID = "tabId" as const;
+export const DOMAIN = "domain" as const;
+export const MAIN_DOMAIN = "mainDomain" as const;
+export const SCION_ENABLED = "scionEnabled" as const;
+
+export type RequestSchema = {
+    [REQUEST_ID]: string;
+    [TAB_ID]: number;
+    [DOMAIN]: string;
+    [MAIN_DOMAIN]: string;
+    [SCION_ENABLED]: boolean;
+};
+type RequestsSchema = {
+    [REQUESTS]: RequestSchema[];
+};
+/**
+ * Note that the string corresponding to the `REQUESTS` key is a serialized representation of the `RequestsSchema` type.
+ */
+type LocalValueSchema = {
+    [REQUESTS]: string;
+};
 
 // ===== LOCAL STORAGE TAB RESOURCES =====
 /*
@@ -27,12 +61,12 @@ in storage for each host for each tab.
 // full key is of the form <TAB_RESOURCE_PREFIX>:<tabId>:<encodedHostname>
 const TAB_RESOURCE_PREFIX = "tabResource";
 
-function getHostResourceKey(tabId, hostname) {
-    const encodedHostname = encodeURIComponent(hostname.toLowerCase());
+function getHostResourceKey(tabId: number, hostname: string): string {
+    const encodedHostname: string = encodeURIComponent(hostname.toLowerCase());
     return `${TAB_RESOURCE_PREFIX}:${tabId}:${encodedHostname}`;
 }
 
-function getTabResourceKeyPrefix(tabId) {
+function getTabResourceKeyPrefix(tabId: number): string {
     return `${TAB_RESOURCE_PREFIX}:${tabId}:`;
 }
 
@@ -40,10 +74,10 @@ function getTabResourceKeyPrefix(tabId) {
  * Returns a list of [hostnames, scionEnabled] tuples of resources the tab with `tabId` requested.
  * Returns an empty list if there is no entry for the `tabId`.
  */
-export async function getTabResources(tabId) {
-    const sessionData = await getAllSessionValues();
-    const prefix = getTabResourceKeyPrefix(tabId);
-    const result = [];
+export async function getTabResources(tabId: number): Promise<[string, boolean][]> {
+    const sessionData: SessionValueSchema = await getAllSessionValues();
+    const prefix: string = getTabResourceKeyPrefix(tabId);
+    const result: [string, boolean][] = [];
 
     for (const [key, value] of Object.entries(sessionData)) {
         if (!key.startsWith(prefix)) continue;
@@ -61,11 +95,11 @@ export async function getTabResources(tabId) {
 /**
  * Removes all the entries for the `tabId`.
  */
-export async function clearTabResources(tabId) {
-    const all = await getAllSessionValues();
-    const prefix = getTabResourceKeyPrefix(tabId);
+export async function clearTabResources(tabId: number) {
+    const all: SessionValueSchema = await getAllSessionValues();
+    const prefix: string = getTabResourceKeyPrefix(tabId);
 
-    const keysToRemove = Object.keys(all).filter(key => key.startsWith(prefix));
+    const keysToRemove: string[] = Object.keys(all).filter(key => key.startsWith(prefix));
     if (keysToRemove.length > 0) {
         await removeSessionValues(keysToRemove);
     }
@@ -75,8 +109,8 @@ export async function clearTabResources(tabId) {
  * Removes all entries for all tabs.
  */
 export async function clearAllTabResources() {
-    const all = await getAllSessionValues();
-    const keysToRemove = Object.keys(all).filter(key => key.startsWith(TAB_RESOURCE_PREFIX));
+    const all: SessionValueSchema = await getAllSessionValues();
+    const keysToRemove: string[] = Object.keys(all).filter(key => key.startsWith(TAB_RESOURCE_PREFIX));
     if (keysToRemove.length > 0) {
         await removeSessionValues(keysToRemove);
     }
@@ -85,11 +119,11 @@ export async function clearAllTabResources() {
 /**
  * Adds the information that `resourceHostname` (with its metainformation `resourceHostScionEnabled`) was requested by the tab with `tabId`.
  */
-export async function addTabResource(tabId, resourceHostname, resourceHostScionEnabled) {
-    const key = getHostResourceKey(tabId, resourceHostname);
+export async function addTabResource(tabId: number, resourceHostname: string, resourceHostScionEnabled: boolean) {
+    const key: string = getHostResourceKey(tabId, resourceHostname);
 
-    const existing = await getSessionValue(key);
-    if (existing && existing[key] !== undefined) return;
+    const existing: boolean | undefined = await getSessionValue(key);
+    if (existing) return;
 
     await saveSessionValue(key, resourceHostScionEnabled);
 
@@ -107,16 +141,15 @@ export async function addTabResource(tabId, resourceHostname, resourceHostScionE
 // and will simply refetch that resource later on if it is requested again (since the entry does not exist, from
 // its perspective it considers this host to be unknown).
 
-const REQUESTS = "requests";
 const MAX_REQUEST_ENTRIES = 50; // keep list small (sync storage quota)
 
-async function loadRequests() {
+async function loadRequests(): Promise<RequestSchema[]> {
     const serializedRequests = await getLocalValue(REQUESTS);
     if (serializedRequests && serializedRequests !== "") {
         try {
-            const requestsObject = JSON.parse(serializedRequests);
-            if (!requestsObject.requests) return [];
-            return requestsObject.requests;
+            const requestsObject = JSON.parse(serializedRequests) as RequestsSchema;
+            if (!requestsObject[REQUESTS]) return [];
+            return requestsObject[REQUESTS];
         } catch {
             return [];
         }
@@ -129,10 +162,13 @@ async function loadRequests() {
  * Returns a list of requests that match the condition provided in the `filter` or all requests
  * if `filter` is left `undefined`.
  */
-export async function getRequests(filter = undefined) {
-    let requests = await loadRequests();
-    Object.keys(filter || {}).forEach((key) => {
-        requests = requests.filter(requestEntry => requestEntry[key] === filter[key]);
+export async function getRequests<K extends keyof RequestSchema>(filter: Partial<RequestSchema> | undefined = undefined): Promise<RequestSchema[]> {
+    let requests: RequestSchema[] = await loadRequests();
+    if (filter === undefined) return requests;
+
+    const keys = Object.keys(filter) as K[];
+    keys.forEach((key: K) => {
+        requests = requests.filter((requestEntry: RequestSchema) => requestEntry[key] === filter[key]);
     })
     return requests;
 }
@@ -141,8 +177,8 @@ export async function getRequests(filter = undefined) {
  * Returns the first request that matches the condition provided in the `filter` or the overall
  * first request if `filter` is left `undefined`.
  */
-export async function firstRequest(filter = undefined) {
-    const filteredRequests = await getRequests(filter);
+export async function firstRequest(filter: Partial<RequestSchema> | undefined = undefined): Promise<RequestSchema | null> {
+    const filteredRequests: RequestSchema[] = await getRequests(filter);
     if (!filteredRequests || filteredRequests.length === 0) return null;
     return filteredRequests[0];
 }
@@ -151,16 +187,17 @@ export async function firstRequest(filter = undefined) {
  * Adds the provided `entry` to the list of requests or updates the first one request that matches
  * the `replaceFilter`.
  */
-export async function addRequest(entry, replaceFilter = undefined) {
-    const requests = await loadRequests();
+export async function addRequest<K extends keyof RequestSchema>(entry: RequestSchema, replaceFilter: Partial<RequestSchema> | undefined = undefined) {
+    const requests: RequestSchema[] = await loadRequests();
     while (requests.length > MAX_REQUEST_ENTRIES) requests.shift();
 
-    if (!replaceFilter) {
+    if (replaceFilter === undefined) {
         requests.push(entry);
     } else {
-        const index = requests.findIndex(requestEntry => {
+
+        const index: number = requests.findIndex((requestEntry: RequestSchema) => {
             let match = true;
-            const keys = Object.keys(replaceFilter);
+            const keys = Object.keys(replaceFilter) as K[];
             for (const key of keys) {
                 if (requestEntry[key] !== replaceFilter[key]) {
                     match = false;
@@ -181,37 +218,39 @@ export async function addRequest(entry, replaceFilter = undefined) {
 // ==========================
 
 // ===== CHROME STORAGE WRAPPER FUNCTIONS =====
-export async function saveSyncValue(key, value) {
+export async function saveSyncValue<K extends keyof SyncValueSchema>(key: K, value: SyncValueSchema[K]) {
     await chrome.storage.sync.set({[key]: value});
 }
 
-export async function getSyncValue(key) {
+export async function getSyncValue<K extends keyof SyncValueSchema>(key: K): Promise<SyncValueSchema[K] | undefined> {
     const result = await chrome.storage.sync.get([key]);
-    return result[key];
+    return result[key] as SyncValueSchema[K] | undefined;
 }
 
-async function saveLocalValue(key, value) {
+async function saveLocalValue<K extends keyof LocalValueSchema>(key: K, value: LocalValueSchema[K]) {
     await chrome.storage.local.set({[key]: value});
 }
 
-async function getLocalValue(key) {
+async function getLocalValue<K extends keyof LocalValueSchema>(key: K): Promise<LocalValueSchema[K]> {
     const result = await chrome.storage.local.get([key]);
-    return result[key];
+    return result[key] as LocalValueSchema[K];
 }
 
-async function saveSessionValue(key, value) {
+async function saveSessionValue(key: keyof SessionValueSchema, value: SessionValueSchema[string]) {
     await chrome.storage.session.set({[key]: value});
 }
 
-async function getSessionValue(key) {
+async function getSessionValue(key: keyof SessionValueSchema): Promise<SessionValueSchema[string] | undefined> {
     const result = await chrome.storage.session.get([key]);
-    return result[key];
+    const typedResult = result as SessionValueSchema | undefined;
+    if (typedResult === undefined) return undefined;
+    return typedResult[key];
 }
 
-async function getAllSessionValues() {
+async function getAllSessionValues(): Promise<SessionValueSchema> {
     return await chrome.storage.session.get();
 }
 
-async function removeSessionValues(keys) {
+async function removeSessionValues(keys: string[]) {
     await chrome.storage.session.remove(keys);
 }

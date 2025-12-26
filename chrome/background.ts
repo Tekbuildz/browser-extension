@@ -13,7 +13,7 @@ import {initializeTabListeners} from "./background_helpers/tab_handler.js";
 getSyncValue(GLOBAL_STRICT_MODE).then(async (syncGlobalStrictMode) => {
     console.log("globalStrictMode: value in sync storage is set to", syncGlobalStrictMode);
     let globalStrictMode = false;
-    if (!syncGlobalStrictMode) {
+    if (syncGlobalStrictMode === undefined) {
         console.log("globalStrictMode: thus setting globalStrictMode to", globalStrictMode);
         await saveSyncValue(GLOBAL_STRICT_MODE, globalStrictMode);
     } else {
@@ -38,7 +38,7 @@ initializeProxyHandler()
 chrome.storage.onChanged.addListener(async (changes, namespace) => {
     // In case we disable running for the extension, lets put an empty set for now
     // Later, we could remove the PAC script, but doesn't impact us now...
-    if (namespace == "sync") {
+    if (namespace === "sync") {
         if (changes.extension_running?.newValue !== undefined) {
 
             await updateRunningIcon(changes.extension_running.newValue);
@@ -61,7 +61,7 @@ chrome.storage.onChanged.addListener(async (changes, namespace) => {
 
             allowAllgeofence(changes.isd_all.newValue);
 
-        } else if (namespace === 'sync' && (changes.proxyScheme || changes.proxyHost || changes.proxyPort)) {
+        } else if (changes.proxyScheme || changes.proxyHost || changes.proxyPort) {
             // Reload all proxy settings if any changed
             loadProxySettings();
 
@@ -71,7 +71,7 @@ chrome.storage.onChanged.addListener(async (changes, namespace) => {
 })
 
 // Changes icon depending on the extension is running or not
-async function updateRunningIcon(extensionRunning) {
+async function updateRunningIcon(extensionRunning: any) {
     if (extensionRunning) {
         await chrome.action.setIcon({path: "/images/scion-38.jpg"});
     } else {
