@@ -244,7 +244,7 @@ export async function getSyncValue<K extends keyof SyncValueSchema>(key: K, fall
 
 export async function getSyncValue<K extends keyof SyncValueSchema>(key: K, fallback?: SyncValueSchema[K]): Promise<SyncValueSchema[K] | undefined> {
     const result = await chrome.storage.sync.get([key]);
-    if (result) return result[key] as SyncValueSchema[K];
+    if (result && result[key]) return result[key] as SyncValueSchema[K];
     return fallback;
 }
 
