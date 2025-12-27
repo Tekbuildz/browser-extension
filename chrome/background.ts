@@ -56,7 +56,7 @@ chrome.storage.onChanged.addListener(async (changes, namespace) => {
         } else if (changes.perSiteStrictMode?.newValue !== undefined) {
 
             // update DNR rules
-            const perSiteStrictMode = (changes.isd_whitelist.newValue || {}) as SyncValueSchema[typeof PER_SITE_STRICT_MODE];
+            const perSiteStrictMode = (changes.perSiteStrictMode.newValue || {}) as SyncValueSchema[typeof PER_SITE_STRICT_MODE];
             await setPerSiteStrictMode(perSiteStrictMode);
 
         } else if (changes.globalStrictMode?.newValue !== undefined) {
