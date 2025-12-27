@@ -37,7 +37,7 @@ async function init() {
     // clearing the resources must be done here, as onBeforeRequest only handles it in non-globalStrictMode, this is in order
     // not to clear tab resources added via the isHostScion call below
     if (currentTab.id && currentTab.id >= 0) await clearTabResources(currentTab.id);
-    const isScion = await isHostScion(host, host, currentTab.id);
+    const isScion = await isHostScion(host, host, currentTab.id !== undefined ? currentTab.id : chrome.tabs.TAB_ID_NONE);
     if (!isScion) {
         statusElement.textContent = "This page is NOT SCION-capable and was blocked in strict mode.";
         checkFinished()

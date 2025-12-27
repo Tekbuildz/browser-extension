@@ -37,15 +37,11 @@ type SessionValueSchema = Record<string, boolean>;
 
 // ===== LOCAL STORAGE =====
 const REQUESTS = "requests" as const;
-export const REQUEST_ID = "requestId" as const;
-export const TAB_ID = "tabId" as const;
 export const DOMAIN = "domain" as const;
 export const MAIN_DOMAIN = "mainDomain" as const;
 export const SCION_ENABLED = "scionEnabled" as const;
 
 export type RequestSchema = {
-    [REQUEST_ID]: string;
-    [TAB_ID]: number;
     [DOMAIN]: string;
     [MAIN_DOMAIN]: string;
     [SCION_ENABLED]: boolean;

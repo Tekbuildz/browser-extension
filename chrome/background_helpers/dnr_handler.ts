@@ -312,7 +312,7 @@ async function getNFreeIds(n: number): Promise<number[]> {
  */
 let idLock = Promise.resolve();
 
-function withLock(fn: (() => void | PromiseLike<void>)) {
+function withLock(fn: (() => Promise<void>)) {
     // chain the new work onto the previous one
     const p = idLock.then(fn, fn);
     // ensure errors don’t break the chain forever
