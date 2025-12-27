@@ -7,8 +7,8 @@
     "doc": "docs"
   },
 "scripts": {
-  "build:css": "tailwindcss -i src/css/tailwind.css -o chrome/css/tailwind.min.css --minify",
-  "watch:css": "tailwindcss -i src/css/tailwind.css -o chrome/css/tailwind.min.css --watch"
+  "build:css": "tailwindcss -i src/css/tailwind.css -o core/css/tailwind.min.css --minify",
+  "watch:css": "tailwindcss -i src/css/tailwind.css -o core/css/tailwind.min.css --watch"
 },
   "repository": {
     "type": "git",
