@@ -6,32 +6,37 @@ Please refer to the [technical documentation](https://scion-browser-extension.re
 
 ## Developer setup instructions
 
-1. Install dependencies:
+1. Install dependencies (run in root folder):
     ```
     npm install -D tailwindcss@2.2.19
     ```
 
-2. Build Tailwind CSS for development (watch mode):
+2. Build Tailwind CSS for development (watch mode) (run in root folder):
     ```
     npm run watch:css
     ```
 
-3. Build Tailwind CSS for production (minified):
+3. Build Tailwind CSS for production (minified) (run in root folder):
     ```
     npm run build:css
     ```
    
-4. Install modules for TypeScript (run in the `chrome` folder):
+4. Install modules for TypeScript (run in the `core` folder):
     ```shell
     npm i -D typescript @types/chrome cpy-cli rimraf
     ```
 
-5. To use the extension, run within the `chrome` folder:
+5. To use the extension, run within the `core` folder:
     ```shell
     npm run build
     ```
+    to build the extension for both chromium and firefox, or alternatively run selective commands:
+    ```shell
+    npm run build:chrome
+    npm run build:firefox
+    ```
    
-    This will write the output into `chrome/dist` which is the folder that can be
+    This will write the output into `dist/<browser>` which is the folder that can be
     selected when loading the unpacked extension.
 
 ### Generate AS Name Map
