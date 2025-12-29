@@ -1,9 +1,10 @@
 import {DOMAIN, getRequests, getSyncValue, GLOBAL_STRICT_MODE, PER_SITE_STRICT_MODE, type RequestSchema, type SyncValueSchema} from "../shared/storage.js";
 import {proxyAddress, proxyHost, proxyURLResolveParam, proxyURLResolvePath, WPAD_URL} from "./proxy_handler.js";
 import {isHostScion} from "./request_interception_handler.js";
-import ResourceType = chrome.declarativeNetRequest.ResourceType;
+import type { DeclarativeNetRequest } from "webextension-polyfill";
 
-type Rule = chrome.declarativeNetRequest.Rule;
+type ResourceType = DeclarativeNetRequest.ResourceType;
+type Rule = DeclarativeNetRequest.Rule;
 
 /*
 General DNR (DeclarativeNetRequest) strategy:
@@ -35,24 +36,22 @@ const SUBRESOURCES_REDIRECT_RULE_ID = 3;
 // sufficiently high to have space for custom DNR rules (specified above)
 const BLOCK_RULE_START_ID = 10000;
 
-const EXT_PAGE = chrome.runtime.getURL('/checking.html');
+const EXT_PAGE = browser.runtime.getURL('/checking.html');
 
-const MAIN_FRAME_TYPE: ResourceType[] = [ResourceType.MAIN_FRAME];
-const SUBRESOURCE_TYPES = [
-    ResourceType.SUB_FRAME,
-    ResourceType.XMLHTTPREQUEST,
-    ResourceType.SCRIPT,
-    ResourceType.IMAGE,
-    ResourceType.FONT,
-    ResourceType.MEDIA,
-    ResourceType.STYLESHEET,
-    ResourceType.OBJECT,
-    ResourceType.OTHER,
-    ResourceType.PING,
-    ResourceType.WEBSOCKET,
-    ResourceType.WEBTRANSPORT,
-    ResourceType.WEBBUNDLE,
-    ResourceType.CSP_REPORT,
+const MAIN_FRAME_TYPE: ResourceType[] = ["main_frame"];
+const SUBRESOURCE_TYPES: ResourceType[] = [
+    "sub_frame",
+    "xmlhttprequest",
+    "script",
+    "image",
+    "font",
+    "media",
+    "stylesheet",
+    "object",
+    "other",
+    "ping",
+    "websocket",
+    "csp_report",
 ];
 const ALL_RESOURCE_TYPES =  MAIN_FRAME_TYPE.concat(SUBRESOURCE_TYPES);
 
@@ -88,7 +87,7 @@ export async function setGlobalStrictMode(globalStrictMode: boolean) {
                 dnrRules.push(createBlockRule(hostname, dnrRuleId));
             }
 
-            await chrome.declarativeNetRequest.updateDynamicRules({
+            await browser.declarativeNetRequest.updateDynamicRules({
                 addRules: dnrRules,
                 removeRuleIds: []
             });
@@ -126,7 +125,7 @@ export async function setPerSiteStrictMode(perSiteStrictMode: SyncValueSchema[ty
             else {
                 // using chrome.tabs.TAB_ID_NONE as the tab id, as no tab can be associated with this request
                 // isHostScion already adds the appropriate DNR rules based on the lookup result (including creating the DB entry for the host)
-                await isHostScion(strictHost, strictHost, chrome.tabs.TAB_ID_NONE, true);
+                await isHostScion(strictHost, strictHost, browser.tabs.TAB_ID_NONE, true);
             }
         }
 
@@ -138,7 +137,7 @@ export async function setPerSiteStrictMode(perSiteStrictMode: SyncValueSchema[ty
             rules.push(subresourceInitiatorRule);
         }
 
-        await chrome.declarativeNetRequest.updateDynamicRules({addRules: rules, removeRuleIds: []});
+        await browser.declarativeNetRequest.updateDynamicRules({addRules: rules, removeRuleIds: []});
     });
 }
 
@@ -149,7 +148,7 @@ export async function addDnrRule(host: string, scionEnabled: boolean, alreadyHas
     const run = async () => {
         const id = (await getNFreeIds(1))[0];
         const rule = scionEnabled ? createAllowRule(host, id) : createBlockRule(host, id);
-        await chrome.declarativeNetRequest.updateDynamicRules({addRules: [rule], removeRuleIds: []})
+        await browser.declarativeNetRequest.updateDynamicRules({addRules: [rule], removeRuleIds: []})
     };
     if (alreadyHasLock) {
         await run();
@@ -166,13 +165,13 @@ export async function removeAllDnrBlockRules(customRulesToRemoveIds = null) {
     if (customRulesToRemoveIds !== null) rulesToRemoveIds = customRulesToRemoveIds;
     else {
         // get all currently active rules and assign them to be removed
-        const currentRules = await chrome.declarativeNetRequest.getDynamicRules()
+        const currentRules = await browser.declarativeNetRequest.getDynamicRules()
         rulesToRemoveIds = currentRules.map(rule => rule.id);
     }
 
     if (!rulesToRemoveIds || rulesToRemoveIds.length === 0) return;
 
-    await chrome.declarativeNetRequest.updateDynamicRules({addRules: [], removeRuleIds: rulesToRemoveIds});
+    await browser.declarativeNetRequest.updateDynamicRules({addRules: [], removeRuleIds: rulesToRemoveIds});
 }
 
 function createBlockRule(host: string, id: number): Rule {
@@ -301,7 +300,7 @@ async function getAllowedAndBlockedHostsWithId() {
  * Note that this function is unsafe and must be wrapped with `withLock`.
  */
 async function getNFreeIds(n: number): Promise<number[]> {
-    const currentRules: Rule[] = await chrome.declarativeNetRequest.getDynamicRules();
+    const currentRules: Rule[] = await browser.declarativeNetRequest.getDynamicRules();
     const usedIds = new Set(currentRules.map(rule => rule.id));
     const idList = new Set(Array.from({length: n + usedIds.size}, (_, i) => i + BLOCK_RULE_START_ID));
     return Array.from(idList.difference(usedIds));
