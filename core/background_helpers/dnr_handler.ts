@@ -239,7 +239,6 @@ function createSubResourcesRedirectRule(id: number): Rule {
             // exclude requests from the proxy to prevent lookup-loops
             excludedRequestDomains: [
                 proxyHost,
-                WPAD_URL,
             ],
         },
     };
@@ -266,7 +265,6 @@ function createSubResourcesInitiatorRedirectRule(id: number, blockedInitiators: 
             // exclude requests from the proxy to prevent lookup-loops
             excludedRequestDomains: [
                 proxyHost,
-                WPAD_URL,
             ],
         }
     }
