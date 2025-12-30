@@ -38,6 +38,10 @@ const BLOCK_RULE_START_ID = 10000;
 
 const EXT_PAGE = browser.runtime.getURL('/checking.html');
 
+// extracting the hostname from the WPAD URL, as it needs to be excluded from matching rules
+// note that this might cause other resources that share the same hostname to be excluded too
+const WPAD_HOSTNAME = new URL(WPAD_URL).hostname;
+
 const MAIN_FRAME_TYPE: ResourceType[] = ["main_frame"];
 const SUBRESOURCE_TYPES: ResourceType[] = [
     "sub_frame",
@@ -239,6 +243,7 @@ function createSubResourcesRedirectRule(id: number): Rule {
             // exclude requests from the proxy to prevent lookup-loops
             excludedRequestDomains: [
                 proxyHost,
+                WPAD_HOSTNAME,
             ],
         },
     };
@@ -265,6 +270,7 @@ function createSubResourcesInitiatorRedirectRule(id: number, blockedInitiators: 
             // exclude requests from the proxy to prevent lookup-loops
             excludedRequestDomains: [
                 proxyHost,
+                WPAD_HOSTNAME,
             ],
         }
     }
