@@ -6,24 +6,24 @@ Please refer to the [technical documentation](https://scion-browser-extension.re
 
 ## Developer setup instructions
 
-1. Install dependencies (run in root folder):
+1. Install dependencies (run in the root folder):
     ```
     npm install -D tailwindcss@2.2.19
     ```
 
-2. Build Tailwind CSS for development (watch mode) (run in root folder):
+2. Build Tailwind CSS for development (watch mode) (run in the root folder):
     ```
     npm run watch:css
     ```
 
-3. Build Tailwind CSS for production (minified) (run in root folder):
+3. Build Tailwind CSS for production (minified) (run in the root folder):
     ```
     npm run build:css
     ```
    
 4. Install modules for TypeScript (run in the `core` folder):
     ```shell
-    npm i -D typescript @types/chrome cpy-cli rimraf
+    npm install
     ```
 
 5. To use the extension, run within the `core` folder:
