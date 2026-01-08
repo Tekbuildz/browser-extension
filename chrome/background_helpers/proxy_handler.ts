@@ -29,37 +29,36 @@ export let proxyAddress = `${proxyScheme}://${proxyHost}:${proxyPort}`;
 
 export const WPAD_URL = `http://wpad/wpad_scion.dat`;
 
-export function initializeProxyHandler() {
+export async function initializeProxyHandler() {
     // Load saved configuration at startup
-    chrome.storage.sync.get({ autoProxyConfig: true }, ({ autoProxyConfig }) => {
-        if (autoProxyConfig) {
-            fetchAndApplyScionPAC();
-        } else {
-            loadProxySettings();
-        }
-    });
+    const {autoProxyConfig} = await chrome.storage.sync.get({autoProxyConfig: true});
+    if (autoProxyConfig) {
+        await fetchAndApplyScionPAC();
+    } else {
+        await loadProxySettings();
+    }
 
-    chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+    chrome.runtime.onMessage.addListener(async function (request, sender, sendResponse) {
         if (request.action === "fetchAndApplyScionPAC") {
-            fetchAndApplyScionPAC();
+            await fetchAndApplyScionPAC();
             return true;
         }
     });
 }
 
-export function loadProxySettings() {
-    getSyncValues({
+export async function loadProxySettings() {
+    await getSyncValues({
         [PROXY_SCHEME]: HTTPS_PROXY_SCHEME,
         [PROXY_HOST]: DEFAULT_PROXY_HOST,
         [PROXY_PORT]: HTTPS_PROXY_PORT,
-    }).then((items) => {
+    }).then(async (items) => {
         proxyScheme = items[PROXY_SCHEME];
         proxyHost = items[PROXY_HOST];
         proxyPort = items[PROXY_PORT];
         proxyAddress = `${proxyScheme}://${proxyHost}:${proxyPort}`;
 
-        updateProxyConfiguration();
-    })
+        await updateProxyConfiguration();
+    });
 }
 
 
@@ -100,113 +99,106 @@ function isValidPort(port: string) {
     return !isNaN(portNum) && portNum > 0 && portNum <= 65535;
 }
 
-function fetchAndApplyScionPAC() {
-    fetch(WPAD_URL)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`Retrieving PAC config; status: ${response.status}`);
-            }
-            return response.text();
-        })
-        .then(pacScript => {
-            const proxyConfig = parseProxyFromPAC(pacScript);
-
-            if (proxyConfig) {
-                // As long as we can parse the PAC script, we assume it is correct,
-                // i.e., we don't check the proxy health here.
-                proxyScheme = proxyConfig.proxyScheme;
-                proxyHost = proxyConfig.proxyHost;
-                proxyPort = proxyConfig.proxyPort;
-                proxyAddress = `${proxyScheme}://${proxyHost}:${proxyPort}`;
-
-                saveSyncValues({
-                    [PROXY_SCHEME]: proxyScheme,
-                    [PROXY_HOST]: proxyHost,
-                    [PROXY_PORT]: proxyPort,
-                }).then(() => {
-                    console.log("Detected proxy configuration:", proxyAddress);
-                });
-
-                const config = {
-                    mode: Mode.PAC_SCRIPT,
-                    pacScript: {
-                        data: pacScript
-                    }
-                };
-
-                chrome.proxy.settings.set({ value: config, scope: 'regular' }, function() {
-                    console.log("SCION PAC configuration from WPAD applied");
-                });
-            } else{
-                throw new Error("Failed to parse PAC script");
-            }
-
-        })
-        .catch(error => {
-            console.warn("Error on WPAD process, falling back to default:", error);
-            fallbackToDefaults();
-        });
-}
-
-function fallbackToDefaults() {
-    tryProxyConnection(HTTPS_PROXY_SCHEME, HTTPS_PROXY_PORT).then(success => {
-        if (success) {
-            setProxyConfiguration(HTTPS_PROXY_SCHEME, DEFAULT_PROXY_HOST, HTTPS_PROXY_PORT);
-        } else {
-            tryProxyConnection(HTTP_PROXY_SCHEME, HTTP_PROXY_PORT).then(success => {
-                if (success) {
-                    setProxyConfiguration(HTTP_PROXY_SCHEME, DEFAULT_PROXY_HOST, HTTP_PROXY_PORT);
-                } else {
-                    setProxyConfiguration(HTTPS_PROXY_SCHEME, DEFAULT_PROXY_HOST, HTTPS_PROXY_PORT);
-                    console.warn("Both HTTPS and HTTP proxy connections failed, using HTTPS as default");
-                }
-            });
+async function fetchAndApplyScionPAC() {
+    try {
+        const response = await fetch(WPAD_URL);
+        if (!response.ok) {
+            throw new Error(`Retrieving PAC config; status: ${response.status}`);
         }
-    });
-}
+        const pacScript = response.text();
 
-function tryProxyConnection(scheme: string, port: string) {
-    return new Promise(resolve => {
-        const testUrl = `${scheme}://${DEFAULT_PROXY_HOST}:${port}${proxyHealthCheckPath}`;
-        console.log(`Testing proxy connection to ${testUrl}`);
+        const proxyConfig = parseProxyFromPAC(pacScript);
 
-        fetch(testUrl, { method: 'GET' })
-            .then(response => {
-                if (response.ok) {
-                    console.log(`Successfully connected to ${scheme} proxy`);
-                    resolve(true);
-                } else {
-                    console.warn(`Failed to connect to ${scheme} proxy: status ${response.status}`);
-                    resolve(false);
-                }
-            })
-            .catch(error => {
-                console.warn(`Error connecting to ${scheme} proxy:`, error);
-                resolve(false);
+        if (proxyConfig) {
+            // As long as we can parse the PAC script, we assume it is correct,
+            // i.e., we don't check the proxy health here.
+            proxyScheme = proxyConfig.proxyScheme;
+            proxyHost = proxyConfig.proxyHost;
+            proxyPort = proxyConfig.proxyPort;
+            proxyAddress = `${proxyScheme}://${proxyHost}:${proxyPort}`;
+
+            await saveSyncValues({
+                [PROXY_SCHEME]: proxyScheme,
+                [PROXY_HOST]: proxyHost,
+                [PROXY_PORT]: proxyPort,
+            }).then(() => {
+                console.log("Detected proxy configuration:", proxyAddress);
             });
-    });
+
+            const config = {
+                mode: Mode.PAC_SCRIPT,
+                pacScript: {
+                    data: pacScript
+                }
+            };
+
+            await chrome.proxy.settings.set({value: config, scope: 'regular'}, function () {
+                console.log("SCION PAC configuration from WPAD applied");
+            });
+        } else {
+            throw new Error("Failed to parse PAC script");
+        }
+    } catch (error) {
+        console.warn("Error on WPAD process, falling back to default:", error);
+        await fallbackToDefaults();
+    }
 }
 
-function setProxyConfiguration(scheme: string, host: string, port: string) {
+async function fallbackToDefaults() {
+    const success = await tryProxyConnection(HTTPS_PROXY_SCHEME, HTTPS_PROXY_PORT);
+    if (success) {
+        await setProxyConfiguration(HTTPS_PROXY_SCHEME, DEFAULT_PROXY_HOST, HTTPS_PROXY_PORT);
+    } else {
+        const httpSuccess = await tryProxyConnection(HTTP_PROXY_SCHEME, HTTP_PROXY_PORT)
+        if (httpSuccess) {
+            await setProxyConfiguration(HTTP_PROXY_SCHEME, DEFAULT_PROXY_HOST, HTTP_PROXY_PORT);
+        } else {
+            await setProxyConfiguration(HTTPS_PROXY_SCHEME, DEFAULT_PROXY_HOST, HTTPS_PROXY_PORT);
+            console.warn("Both HTTPS and HTTP proxy connections failed, using HTTPS as default");
+        }
+    }
+}
+
+async function tryProxyConnection(scheme: string, port: string) {
+    const testUrl = `${scheme}://${DEFAULT_PROXY_HOST}:${port}${proxyHealthCheckPath}`;
+    console.log(`Testing proxy connection to ${testUrl}`);
+
+    try {
+        const response = await fetch(testUrl, {method: 'GET'});
+
+        if (response.ok) {
+            console.log(`Successfully connected to ${scheme} proxy`);
+            return true;
+        } else {
+            console.warn(`Failed to connect to ${scheme} proxy: status ${response.status}`);
+            return false;
+        }
+    } catch (error) {
+        console.warn(`Error connecting to ${scheme} proxy:`, error);
+        return false;
+    }
+}
+
+async function setProxyConfiguration(scheme: string, host: string, port: string) {
     proxyScheme = scheme;
     proxyHost = host;
     proxyPort = port;
     proxyAddress = `${proxyScheme}://${proxyHost}:${proxyPort}`;
 
-    chrome.storage.sync.set({
-        proxyScheme: proxyScheme,
-        proxyHost: proxyHost,
-        proxyPort: proxyPort
-    }, function() {
+    await saveSyncValues({
+        [PROXY_SCHEME]: proxyScheme,
+        [PROXY_HOST]: proxyHost,
+        [PROXY_PORT]: proxyPort,
+    }).then(() => {
         console.log(`Using proxy configuration: ${proxyAddress}`);
     });
 
-    updateProxyConfiguration();
+    await updateProxyConfiguration();
 }
 
 
 // direct everything to the forward-proxy except if the target is the forward-proxy, then go direct
-function updateProxyConfiguration() {
+async function updateProxyConfiguration() {
     const config = {
         mode: Mode.PAC_SCRIPT,
         pacScript: {
@@ -221,10 +213,10 @@ function updateProxyConfiguration() {
         }
     };
 
-    chrome.proxy.settings.set({ value: config, scope: 'regular' }, function() {
-        console.log("Proxy configuration updated");
-        chrome.proxy.settings.get({}, function(config) {
-            console.log(config);
-        });
+    await chrome.proxy.settings.set({value: config, scope: 'regular'});
+
+    console.log("Proxy configuration updated");
+    await chrome.proxy.settings.get({}, function (config) {
+        console.log(config);
     });
 }
