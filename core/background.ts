@@ -70,7 +70,7 @@ browser.storage.onChanged.addListener(async (changes, namespace) => {
 
         } else if (changes.proxyScheme || changes.proxyHost || changes.proxyPort) {
             // Reload all proxy settings if any changed
-            loadProxySettings();
+            await loadProxySettings();
 
             resetPolicyCookie()
         }
