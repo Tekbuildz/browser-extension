@@ -34,7 +34,7 @@ const MAIN_FRAME_REDIRECT_RULE_ID = 2;
 const SUBRESOURCES_REDIRECT_RULE_ID = 3;
 
 // sufficiently high to have space for custom DNR rules (specified above)
-const BLOCK_RULE_START_ID = 10000;
+const DOMAIN_SPECIFIC_RULES_START_ID = 10000;
 
 const EXT_PAGE = browser.runtime.getURL('/checking.html');
 
@@ -77,24 +77,22 @@ export async function initializeDnr(globalStrictMode: boolean) {
 export async function setGlobalStrictMode(globalStrictMode: boolean) {
     if (globalStrictMode) {
         await withLock(async () => {
-            await removeAllDnrBlockRules();
             const [allowedHostsWithId, blockedHostsWithId] = await getAllowedAndBlockedHostsWithId();
 
-            let dnrRules = [
+            let customRules = [
                 createMainFrameRedirectRule(MAIN_FRAME_REDIRECT_RULE_ID),
                 createSubResourcesRedirectRule(SUBRESOURCES_REDIRECT_RULE_ID),
             ];
+
+            let domainSpecificRules = [];
             for (const [hostname, dnrRuleId] of Object.entries(allowedHostsWithId)) {
-                dnrRules.push(createAllowRule(hostname, dnrRuleId));
+                domainSpecificRules.push(createAllowRule(hostname, dnrRuleId));
             }
             for (const [hostname, dnrRuleId] of Object.entries(blockedHostsWithId)) {
-                dnrRules.push(createBlockRule(hostname, dnrRuleId));
+                domainSpecificRules.push(createBlockRule(hostname, dnrRuleId));
             }
 
-            await browser.declarativeNetRequest.updateDynamicRules({
-                addRules: dnrRules,
-                removeRuleIds: []
-            });
+            await updateRules(customRules, domainSpecificRules);
         });
     } else {
         // only handle perSiteStrictMode if global mode is off, otherwise global overrides them anyway
@@ -115,17 +113,16 @@ export async function setPerSiteStrictMode(perSiteStrictMode: SyncValueSchema[ty
     await withLock(async () => {
         const [allowedHostsWithId, blockedHostsWithId] = await getAllowedAndBlockedHostsWithId();
 
-        await removeAllDnrBlockRules();
         const strictHosts: string[] = Object.entries(perSiteStrictMode)
             .filter(([, isStrict]) => isStrict)
             .map(([host]) => host);
 
         // adding rules that block each of the hosts directly
-        let rules: Rule[] = [];
+        let domainSpecificRules: Rule[] = [];
         for (const strictHost of strictHosts) {
             // if the extension has info about the host, add the appropriate DNR rule, otherwise perform a lookup
-            if (Object.keys(blockedHostsWithId).includes(strictHost)) rules.push(createBlockRule(strictHost, blockedHostsWithId[strictHost]));
-            else if (Object.keys(allowedHostsWithId).includes(strictHost)) rules.push(createAllowRule(strictHost, allowedHostsWithId[strictHost]));
+            if (Object.keys(blockedHostsWithId).includes(strictHost)) domainSpecificRules.push(createBlockRule(strictHost, blockedHostsWithId[strictHost]));
+            else if (Object.keys(allowedHostsWithId).includes(strictHost)) domainSpecificRules.push(createAllowRule(strictHost, allowedHostsWithId[strictHost]));
             else {
                 // using chrome.tabs.TAB_ID_NONE as the tab id, as no tab can be associated with this request
                 // isHostScion already adds the appropriate DNR rules based on the lookup result (including creating the DB entry for the host)
@@ -136,12 +133,13 @@ export async function setPerSiteStrictMode(perSiteStrictMode: SyncValueSchema[ty
         // the individual rules above are insufficient, as a site marked as 'strict' can invoke other sub-resources that
         // should be blocked, but might have a different hostname and thus might not have a matching rule
         // thus, a redirect rule is needed that redirects all requests whose initiator is marked as 'strict'
+        let customRules = [];
         if (strictHosts.length > 0) {
             const subresourceInitiatorRule = createSubResourcesInitiatorRedirectRule(SUBRESOURCES_INITIATOR_REDIRECT_RULE_ID, strictHosts);
-            rules.push(subresourceInitiatorRule);
+            customRules.push(subresourceInitiatorRule);
         }
 
-        await browser.declarativeNetRequest.updateDynamicRules({addRules: rules, removeRuleIds: []});
+        await updateRules(customRules, domainSpecificRules);
     });
 }
 
@@ -159,23 +157,6 @@ export async function addDnrRule(host: string, scionEnabled: boolean, alreadyHas
         return;
     }
     await withLock(run);
-}
-
-/**
- * removes all DNR block rules, functionally equivalent to calling removeDNRBlockRule for each non-scion page
- */
-export async function removeAllDnrBlockRules(customRulesToRemoveIds = null) {
-    let rulesToRemoveIds;
-    if (customRulesToRemoveIds !== null) rulesToRemoveIds = customRulesToRemoveIds;
-    else {
-        // get all currently active rules and assign them to be removed
-        const currentRules = await browser.declarativeNetRequest.getDynamicRules()
-        rulesToRemoveIds = currentRules.map(rule => rule.id);
-    }
-
-    if (!rulesToRemoveIds || rulesToRemoveIds.length === 0) return;
-
-    await browser.declarativeNetRequest.updateDynamicRules({addRules: [], removeRuleIds: rulesToRemoveIds});
 }
 
 function createBlockRule(host: string, id: number): Rule {
@@ -306,8 +287,45 @@ async function getAllowedAndBlockedHostsWithId() {
 async function getNFreeIds(n: number): Promise<number[]> {
     const currentRules: Rule[] = await browser.declarativeNetRequest.getDynamicRules();
     const usedIds = new Set(currentRules.map(rule => rule.id));
-    const idList = new Set(Array.from({length: n + usedIds.size}, (_, i) => i + BLOCK_RULE_START_ID));
+    const idList = new Set(Array.from({length: n + usedIds.size}, (_, i) => i + DOMAIN_SPECIFIC_RULES_START_ID));
     return Array.from(idList.difference(usedIds));
+}
+
+/**
+ * Updates the DNR rules with a single call to `chrome.declarativeNetRequest.updateDynamicRules` such that after execution of this function, only
+ * `targetCustomRules` and `targetDomainSpecificRules` are active.
+ *
+ * @param targetCustomRules is an array of custom defined rules (such as `createMainFrameRedirectRule`) that should be active from this point onward.
+ * @param targetDomainSpecificRules is an array of domain specific rules (created by `createBlockRule` and `createAllowRule`) that should be active from this point onward.
+ */
+async function updateRules(targetCustomRules: Rule[], targetDomainSpecificRules: Rule[]) {
+    const currentRules = await browser.declarativeNetRequest.getDynamicRules();
+    let currentCustomRules = [];
+    let currentDomainSpecificRules = [];
+    for (const currentRule of currentRules) {
+        if (currentRule.id < DOMAIN_SPECIFIC_RULES_START_ID) currentCustomRules.push(currentRule);
+        else currentDomainSpecificRules.push(currentRule);
+    }
+
+    const customRulesToAdd = targetCustomRules.filter(rule => !currentCustomRules.includes(rule));
+    const customRulesToRemove = currentCustomRules.filter(rule => !targetCustomRules.includes(rule));
+
+    const currentDsrHosts = currentDomainSpecificRules
+        .filter(rule => rule.condition.requestDomains)
+        .map(rule => rule.condition.requestDomains![0]);
+    const targetDsrHosts = targetDomainSpecificRules
+        .filter(rule => rule.condition.requestDomains)
+        .map(rule => rule.condition.requestDomains![0]);
+    const domainSpecificRulesToAdd = targetDomainSpecificRules
+        .filter(rule => rule.condition.requestDomains)
+        .filter(rule => !currentDsrHosts.includes(rule.condition.requestDomains![0]));
+    const domainSpecificRulesToRemove = currentDomainSpecificRules
+        .filter(rule => rule.condition.requestDomains)
+        .filter(rule => !targetDsrHosts.includes(rule.condition.requestDomains![0]));
+
+    const rulesToAdd = customRulesToAdd.concat(domainSpecificRulesToAdd);
+    const rulesToRemoveIds = customRulesToRemove.concat(domainSpecificRulesToRemove).map(rule => rule.id);
+    await browser.declarativeNetRequest.updateDynamicRules({addRules: rulesToAdd, removeRuleIds: rulesToRemoveIds});
 }
 
 /**

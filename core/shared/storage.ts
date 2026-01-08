@@ -140,7 +140,7 @@ export async function addTabResource(tabId: number, resourceHostname: string, re
     const key: string = getHostResourceKey(tabId, resourceHostname);
 
     const existing: boolean | undefined = await getSessionValue(key);
-    if (existing) return;
+    if (existing !== undefined) return;
 
     await saveSessionValue(key, resourceHostScionEnabled);
 
