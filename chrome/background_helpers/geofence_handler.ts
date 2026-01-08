@@ -47,8 +47,7 @@ function setPolicy(policy: string[]) {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json; charset=utf-8' },
             body: JSON.stringify(policy)
-        })
-            .then(async (res: Response) => {
+        }).then(async (res: Response) => {
                 const text = await res.text();
 
                 // The fetch operation is complete. This could mean that either the data transfer has been completed successfully or failed.

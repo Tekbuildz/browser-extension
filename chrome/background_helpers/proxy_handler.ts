@@ -47,18 +47,17 @@ export async function initializeProxyHandler() {
 }
 
 export async function loadProxySettings() {
-    await getSyncValues({
+    const items = await getSyncValues({
         [PROXY_SCHEME]: HTTPS_PROXY_SCHEME,
         [PROXY_HOST]: DEFAULT_PROXY_HOST,
         [PROXY_PORT]: HTTPS_PROXY_PORT,
-    }).then(async (items) => {
-        proxyScheme = items[PROXY_SCHEME];
-        proxyHost = items[PROXY_HOST];
-        proxyPort = items[PROXY_PORT];
-        proxyAddress = `${proxyScheme}://${proxyHost}:${proxyPort}`;
-
-        await updateProxyConfiguration();
     });
+    proxyScheme = items[PROXY_SCHEME];
+    proxyHost = items[PROXY_HOST];
+    proxyPort = items[PROXY_PORT];
+    proxyAddress = `${proxyScheme}://${proxyHost}:${proxyPort}`;
+
+    await updateProxyConfiguration();
 }
 
 
@@ -121,9 +120,8 @@ async function fetchAndApplyScionPAC() {
                 [PROXY_SCHEME]: proxyScheme,
                 [PROXY_HOST]: proxyHost,
                 [PROXY_PORT]: proxyPort,
-            }).then(() => {
-                console.log("Detected proxy configuration:", proxyAddress);
             });
+            console.log("Detected proxy configuration:", proxyAddress);
 
             const config = {
                 mode: Mode.PAC_SCRIPT,
@@ -189,9 +187,8 @@ async function setProxyConfiguration(scheme: string, host: string, port: string)
         [PROXY_SCHEME]: proxyScheme,
         [PROXY_HOST]: proxyHost,
         [PROXY_PORT]: proxyPort,
-    }).then(() => {
-        console.log(`Using proxy configuration: ${proxyAddress}`);
     });
+    console.log(`Using proxy configuration: ${proxyAddress}`);
 
     await updateProxyConfiguration();
 }
