@@ -105,7 +105,7 @@ async function fetchAndApplyScionPAC() {
         if (!response.ok) {
             throw new Error(`Retrieving PAC config; status: ${response.status}`);
         }
-        const pacScript = response.text();
+        const pacScript = await response.text();
 
         const proxyConfig = parseProxyFromPAC(pacScript);
 
@@ -132,9 +132,9 @@ async function fetchAndApplyScionPAC() {
                 }
             };
 
-            await chrome.proxy.settings.set({value: config, scope: 'regular'}, function () {
-                console.log("SCION PAC configuration from WPAD applied");
-            });
+            await chrome.proxy.settings.set({value: config, scope: 'regular'});
+
+            console.log("SCION PAC configuration from WPAD applied");
         } else {
             throw new Error("Failed to parse PAC script");
         }
@@ -216,7 +216,7 @@ async function updateProxyConfiguration() {
     await chrome.proxy.settings.set({value: config, scope: 'regular'});
 
     console.log("Proxy configuration updated");
-    await chrome.proxy.settings.get({}, function (config) {
-        console.log(config);
-    });
+
+    const proxyConfig = await chrome.proxy.settings.get({});
+    console.log(proxyConfig);
 }

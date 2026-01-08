@@ -160,23 +160,6 @@ export async function addDnrRule(host: string, scionEnabled: boolean, alreadyHas
     await withLock(run);
 }
 
-/**
- * removes all DNR block rules, functionally equivalent to calling removeDNRBlockRule for each non-scion page
- */
-export async function removeAllDnrBlockRules(customRulesToRemoveIds = null) {
-    let rulesToRemoveIds;
-    if (customRulesToRemoveIds !== null) rulesToRemoveIds = customRulesToRemoveIds;
-    else {
-        // get all currently active rules and assign them to be removed
-        const currentRules = await chrome.declarativeNetRequest.getDynamicRules()
-        rulesToRemoveIds = currentRules.map(rule => rule.id);
-    }
-
-    if (!rulesToRemoveIds || rulesToRemoveIds.length === 0) return;
-
-    await chrome.declarativeNetRequest.updateDynamicRules({addRules: [], removeRuleIds: rulesToRemoveIds});
-}
-
 function createBlockRule(host: string, id: number): Rule {
     return {
         id: id,
@@ -316,7 +299,7 @@ async function getNFreeIds(n: number): Promise<number[]> {
  * @param targetCustomRules is an array of custom defined rules (such as `createMainFrameRedirectRule`) that should be active from this point onward.
  * @param targetDomainSpecificRules is an array of domain specific rules (created by `createBlockRule` and `createAllowRule`) that should be active from this point onward.
  */
-async function updateRules(targetCustomRules, targetDomainSpecificRules) {
+async function updateRules(targetCustomRules: Rule[], targetDomainSpecificRules: Rule[]) {
     const currentRules = await chrome.declarativeNetRequest.getDynamicRules();
     let currentCustomRules = [];
     let currentDomainSpecificRules = [];
@@ -328,10 +311,18 @@ async function updateRules(targetCustomRules, targetDomainSpecificRules) {
     const customRulesToAdd = targetCustomRules.filter(rule => !currentCustomRules.includes(rule));
     const customRulesToRemove = currentCustomRules.filter(rule => !targetCustomRules.includes(rule));
 
-    const currentDsrHosts = currentDomainSpecificRules.map(rule => rule.condition.requestDomains[0]);
-    const targetDsrHosts = targetDomainSpecificRules.map(rule => rule.condition.requestDomains[0]);
-    const domainSpecificRulesToAdd = targetDomainSpecificRules.filter(rule => !currentDsrHosts.includes(rule.condition.requestDomains[0]));
-    const domainSpecificRulesToRemove = currentDomainSpecificRules.filter(rule => !targetDsrHosts.includes(rule.condition.requestDomains[0]));
+    const currentDsrHosts = currentDomainSpecificRules
+        .filter(rule => rule.condition.requestDomains)
+        .map(rule => rule.condition.requestDomains![0]);
+    const targetDsrHosts = targetDomainSpecificRules
+        .filter(rule => rule.condition.requestDomains)
+        .map(rule => rule.condition.requestDomains![0]);
+    const domainSpecificRulesToAdd = targetDomainSpecificRules
+        .filter(rule => rule.condition.requestDomains)
+        .filter(rule => !currentDsrHosts.includes(rule.condition.requestDomains![0]));
+    const domainSpecificRulesToRemove = currentDomainSpecificRules
+        .filter(rule => rule.condition.requestDomains)
+        .filter(rule => !targetDsrHosts.includes(rule.condition.requestDomains![0]));
 
     const rulesToAdd = customRulesToAdd.concat(domainSpecificRulesToAdd);
     const rulesToRemoveIds = customRulesToRemove.concat(domainSpecificRulesToRemove).map(rule => rule.id);
