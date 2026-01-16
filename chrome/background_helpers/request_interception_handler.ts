@@ -1,7 +1,7 @@
 import {proxyAddress, proxyHostResolveParam, proxyHostResolvePath, proxyURLResolvePath} from "./proxy_handler.js";
 import {addDnrRule} from "./dnr_handler.js";
 import {policyCookie} from "./geofence_handler.js";
-import {addRequest, addTabResource, clearTabResources, getRequests} from "../shared/storage.js";
+import {addRequest, addTabResource, clearTabResources, DOMAIN, getRequests, MAIN_DOMAIN, SCION_ENABLED, type RequestSchema} from "../shared/storage.js";
 import {normalizedHostname, safeHostname} from "../shared/utilities.js";
 import {GlobalStrictMode, PerSiteStrictMode} from "../background.js";
 
@@ -223,7 +223,7 @@ function onHeadersReceived(details: OnHeadersReceivedDetails): undefined {
         const url = new URL(details.url);
         // the actual URL that we need is in ?url=$url
         const target = url.search.split("=")[1];
-        const targetHostname = safeHostname(target);
+        const targetHostname: string | null = safeHostname(target);
 
         if (targetHostname === null) {
             console.error(`[onHeadersReceived]: Failed to extract hostname from target url: ${target}`);
@@ -249,8 +249,8 @@ function onHeadersReceived(details: OnHeadersReceivedDetails): undefined {
         async function asyncHelper() {
             const initiatorHostname = details.initiator ? safeHostname(details.initiator) : null;
             if (initiatorHostname === null) console.log("[onHeadersReceived]: Failed to extract hostname from initiator: ", details);
-            await handleAddDnrRule(targetHostname, scionEnabled, false);
-            await createRequestEntry(targetHostname, initiatorHostname ?? "", details.tabId, scionEnabled);
+            await handleAddDnrRule(targetHostname!, scionEnabled, false);
+            await createRequestEntry(targetHostname!, initiatorHostname ?? "", details.tabId, scionEnabled);
         }
     }
 }

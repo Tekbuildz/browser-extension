@@ -1,4 +1,4 @@
-import {DOMAIN, getRequests, type RequestSchema, type SyncValueSchema} from "../shared/storage.js";
+import {DOMAIN, getRequests, type RequestSchema} from "../shared/storage.js";
 import {proxyAddress, proxyHost, proxyURLResolveParam, proxyURLResolvePath, WPAD_URL} from "./proxy_handler.js";
 import {isHostScion} from "./request_interception_handler.js";
 import {normalizedHostname} from "../shared/utilities.js";
@@ -137,7 +137,7 @@ export async function perSiteStrictModeUpdated() {
         // the individual rules above are insufficient, as a site marked as 'strict' can invoke other sub-resources that
         // should be blocked, but might have a different hostname and thus might not have a matching rule
         // thus, a redirect rule is needed that redirects all requests whose initiator is marked as 'strict'
-        let genericRules = [];
+        let genericRules: Rule[] = [];
         if (strictHosts.length > 0) {
             const subresourceInitiatorRule = createSubResourcesInitiatorRedirectRule(strictHosts);
             genericRules.push(subresourceInitiatorRule);
@@ -155,7 +155,7 @@ export async function updateProxySettingsInDnrRules() {
     const currentRules = await chrome.declarativeNetRequest.getDynamicRules();
     let hasSRR = false; // sub-resources redirect rule
     let hasSIRR = false; // sub-resources initiator redirect rule
-    let initiatorRuleBlockedInitiators = null;
+    let initiatorRuleBlockedInitiators: string[] = [];
     for (const rule of currentRules) {
         if (rule.id === SUBRESOURCES_REDIRECT_RULE_ID) {
             hasSRR = true;
@@ -163,7 +163,7 @@ export async function updateProxySettingsInDnrRules() {
             if (hasSIRR) break;
         }
         if (rule.id === SUBRESOURCES_INITIATOR_REDIRECT_RULE_ID) {
-            initiatorRuleBlockedInitiators = rule.condition.initiatorDomains;
+            initiatorRuleBlockedInitiators = rule.condition.initiatorDomains!;
             hasSIRR = true;
 
             // both rules found, no need to search further
@@ -236,7 +236,7 @@ function createAllowRule(host: string, id: number): Rule {
 /**
  * Returns the string for the `urlFilter` parameter of a DNR rule.
  */
-function urlFilterFromHost(host) {
+function urlFilterFromHost(host: string) {
     // in the simplified pattern matching syntax used by `urlFilter`, the '|' pipe denotes the start of the url, allowing for EXACT url matching,
     // something that the `requestDomains` property cannot do (e.g. `requestDomains: ["example.com"]` will also match requests to `a.example.com`)
     return `|http*://${host}/`;
@@ -292,7 +292,7 @@ function createSubResourcesRedirectRule(): Rule {
 /**
  * Returns a DNR rule that redirects all sub-resources whose initiator is in `blockedInitiators` to the `proxyURLResolvePath` endpoint.
  */
-function createSubResourcesInitiatorRedirectRule(blockedInitiators: string[]) {
+function createSubResourcesInitiatorRedirectRule(blockedInitiators: string[]): Rule {
     return {
         id: SUBRESOURCES_INITIATOR_REDIRECT_RULE_ID,
         priority: SUBRESOURCES_INITIATOR_REDIRECT_RULE_ID,
