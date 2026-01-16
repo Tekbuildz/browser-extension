@@ -8,28 +8,34 @@ import "./vendor/browser-polyfill.js";
 import {initializeProxyHandler, loadProxySettings} from "./background_helpers/proxy_handler.js";
 import {allowAllgeofence, geofence, resetPolicyCookie} from "./background_helpers/geofence_handler.js";
 import {EXTENSION_RUNNING, getSyncValue, GLOBAL_STRICT_MODE, ISD_ALL, ISD_WHITELIST, PER_SITE_STRICT_MODE, saveSyncValue, type SyncValueSchema} from "./shared/storage.js";
-import {initializeDnr, setGlobalStrictMode, setPerSiteStrictMode} from "./background_helpers/dnr_handler.js";
+import {globalStrictModeUpdated, initializeDnr, perSiteStrictModeUpdated, updateProxySettingsInDnrRules} from "./background_helpers/dnr_handler.js";
 import {initializeRequestInterceptionListeners} from "./background_helpers/request_interception_handler.js";
 import {initializeTabListeners} from "./background_helpers/tab_handler.js";
 
+export let GlobalStrictMode: SyncValueSchema[typeof GLOBAL_STRICT_MODE] = false;
+export let PerSiteStrictMode: SyncValueSchema[typeof PER_SITE_STRICT_MODE] = {};
+
 /*--- setup ------------------------------------------------------------------*/
 
-getSyncValue(GLOBAL_STRICT_MODE).then(async (syncGlobalStrictMode) => {
-    console.log("globalStrictMode: value in sync storage is set to", syncGlobalStrictMode);
-    let globalStrictMode = false;
-    if (syncGlobalStrictMode === undefined) {
-        console.log("globalStrictMode: thus setting globalStrictMode to", globalStrictMode);
-        await saveSyncValue(GLOBAL_STRICT_MODE, globalStrictMode);
-    } else {
-        globalStrictMode = syncGlobalStrictMode;
-    }
+const initializeExtension = async () => {
+    const storageGlobalStrictMode = await getSyncValue(GLOBAL_STRICT_MODE);
+    GlobalStrictMode = storageGlobalStrictMode ?? false;
+    if (storageGlobalStrictMode === undefined) await saveSyncValue(GLOBAL_STRICT_MODE, GlobalStrictMode);
+    console.log(`[initializeExtension]: GlobalStrictMode: ${GlobalStrictMode}`);
+
+    const storagePerSiteStrictMode = await getSyncValue(PER_SITE_STRICT_MODE);
+    PerSiteStrictMode = storagePerSiteStrictMode ?? {};
+    if (storagePerSiteStrictMode === undefined) await saveSyncValue(PER_SITE_STRICT_MODE, PerSiteStrictMode);
+    console.log(`[initializeExtension]: PerSiteStrictMode: ${PerSiteStrictMode}`);
+
     /*--- PAC --------------------------------------------------------------------*/
     // initializing proxy handler before DNR, as some DNR rules rely on the `proxyAddress`
     await initializeProxyHandler()
     /*--- END PAC ----------------------------------------------------------------*/
 
-    await initializeDnr(globalStrictMode);
-})
+    await initializeDnr();
+};
+initializeExtension();
 
 // Do icon setup etc at startup
 getSyncValue(EXTENSION_RUNNING).then(async extensionRunning => {
@@ -58,21 +64,25 @@ browser.storage.onChanged.addListener(async (changes, namespace) => {
 
         } else if (changes.perSiteStrictMode?.newValue !== undefined) {
 
+            PerSiteStrictMode = (changes.perSiteStrictMode.newValue || {}) as SyncValueSchema[typeof PER_SITE_STRICT_MODE];
+
             // update DNR rules
-            const perSiteStrictMode = (changes.perSiteStrictMode.newValue || {}) as SyncValueSchema[typeof PER_SITE_STRICT_MODE];
-            await setPerSiteStrictMode(perSiteStrictMode);
+            await perSiteStrictModeUpdated();
 
         } else if (changes.globalStrictMode?.newValue !== undefined) {
 
+            GlobalStrictMode = changes.globalStrictMode.newValue as SyncValueSchema[typeof GLOBAL_STRICT_MODE];
+
             // update DNR rules
-            const globalStrictMode = changes.globalStrictMode.newValue as SyncValueSchema[typeof GLOBAL_STRICT_MODE];
-            await setGlobalStrictMode(globalStrictMode);
+            await globalStrictModeUpdated();
 
         } else if (changes.proxyScheme || changes.proxyHost || changes.proxyPort) {
             // Reload all proxy settings if any changed
             await loadProxySettings();
 
-            resetPolicyCookie()
+            resetPolicyCookie();
+
+            await updateProxySettingsInDnrRules();
         }
     }
 })

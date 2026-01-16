@@ -1,22 +1,19 @@
 /**
- * Normalizes the hostname by removing (if existing) the `www.` prefix.
- *
- * Given the limitation of DNR rules of not being able to explicitly match exact domains (e.g. 'google.com' also matches 'www.google.com'),
- * a simplification via the removal of the `www.` prefix can be made. This ensures consistency, as it can occur that the user requests a URL
- * such as 'google.com', the proxy lookup is performed for that URL in the checking.html page but if the user is redirected to that page, this
- * URL might itself be redirected to 'www.google.com' which the extension no longer would recognise.
+ * Normalizes the `hostname` to be in punycode format.
+ * @param hostname the `hostname` to be converted.
+ * @returns {string} the normalized string representation of the `hostname` in punycode format.
  */
 export function normalizedHostname(hostname: string): string {
-    return hostname.startsWith("www.") ? hostname.slice(4) : hostname;
+    return new URL(`https://${hostname}`).hostname;
 }
 
 /**
- * Safely extracts the hostname from the provided `url` and normalizes it via `normalizedHostname`.
- * If an error occurs during the extraction process, `null` is returned.
+ * Safely extracts the hostname in punycode format from the provided `url`.
+ * If the extraction of the hostname fails, `null` is returned.
  */
 export function safeHostname(url: string | URL): string | null {
     try {
-        return url ? normalizedHostname(new URL(url).hostname) : null;
+        return url ? new URL(url).hostname : null;
     } catch {
         return null;
     }
