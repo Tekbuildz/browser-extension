@@ -178,6 +178,8 @@ async function loadRequests(): Promise<RequestSchema[]> {
 /**
  * Returns a list of requests that match the condition provided in the `filter` or all requests
  * if `filter` is left `undefined`.
+ *
+ * Note that hostnames in request-entries are in punycode format.
  */
 export async function getRequests<K extends keyof RequestSchema>(filter: Partial<RequestSchema> | undefined = undefined): Promise<RequestSchema[]> {
     let requests: RequestSchema[] = await loadRequests();
@@ -193,6 +195,8 @@ export async function getRequests<K extends keyof RequestSchema>(filter: Partial
 /**
  * Returns the first request that matches the condition provided in the `filter` or the overall
  * first request if `filter` is left `undefined`.
+ *
+ * Note that hostnames in request-entries are in punycode format.
  */
 export async function firstRequest(filter: Partial<RequestSchema> | undefined = undefined): Promise<RequestSchema | null> {
     const filteredRequests: RequestSchema[] = await getRequests(filter);
@@ -203,6 +207,8 @@ export async function firstRequest(filter: Partial<RequestSchema> | undefined = 
 /**
  * Adds the provided `entry` to the list of requests or updates the first one request that matches
  * the `replaceFilter`.
+ *
+ * Note that the hostnames contained in `entry` must already be in punycode format (see {@link normalizedHostname}).
  */
 export async function addRequest<K extends keyof RequestSchema>(entry: RequestSchema, replaceFilter: Partial<RequestSchema> | undefined = undefined) {
     const requests: RequestSchema[] = await loadRequests();
@@ -232,6 +238,7 @@ export async function addRequest<K extends keyof RequestSchema>(entry: RequestSc
 
     await saveLocalValue(REQUESTS, JSON.stringify({requests}));
 }
+
 // ==========================
 
 // ===== CHROME STORAGE WRAPPER FUNCTIONS =====
@@ -240,7 +247,7 @@ export async function saveSyncValue<K extends keyof SyncValueSchema>(key: K, val
 }
 
 export async function getSyncValue<K extends keyof SyncValueSchema>(key: K): Promise<SyncValueSchema[K] | undefined>;
-export async function getSyncValue<K extends keyof SyncValueSchema>(key: K, fallback: SyncValueSchema[K]) : Promise<SyncValueSchema[K]>;
+export async function getSyncValue<K extends keyof SyncValueSchema>(key: K, fallback: SyncValueSchema[K]): Promise<SyncValueSchema[K]>;
 
 export async function getSyncValue<K extends keyof SyncValueSchema>(key: K, fallback?: SyncValueSchema[K]): Promise<SyncValueSchema[K] | undefined> {
     const result = await chrome.storage.sync.get([key]);
