@@ -29,7 +29,7 @@ const INDEX_LAST_ACCESSED = "by_lastAccessed";
 const INDEX_DOMAIN = "by_domain";
 
 const MAX_ENTRIES = browser.declarativeNetRequest.MAX_NUMBER_OF_DYNAMIC_RULES - 500; // subtracting some buffer
-const EVICT_COUNT = 100;
+const EVICT_COUNT = 100; // arbitrary number that results in eviction process taking ~15ms
 
 let dbPromise: Promise<IDBDatabase> | null = null;
 
