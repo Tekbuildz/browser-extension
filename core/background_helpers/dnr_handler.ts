@@ -1,9 +1,10 @@
-import {DOMAIN, getRequests, type RequestSchema} from "../shared/storage.js";
+import {DOMAIN, type RequestSchema} from "../shared/database.js";
 import {proxyAddress, proxyHost, proxyURLResolveParam, proxyURLResolvePath, WPAD_URL} from "./proxy_handler.js";
 import {isHostScion} from "./request_interception_handler.js";
 import {IsChromium, normalizedHostname} from "../shared/utilities.js";
 import {GlobalStrictMode, PerSiteStrictMode} from "../background.js";
 import type {DeclarativeNetRequest} from "webextension-polyfill";
+import {getRequestsInDB} from "../shared/database.js";
 
 type ResourceType = DeclarativeNetRequest.ResourceType;
 type Rule = DeclarativeNetRequest.Rule;
@@ -354,7 +355,7 @@ function createSubResourcesInitiatorRedirectRule(blockedInitiators: string[]): R
  * Note that this function is unsafe and must be wrapped with `withLock`.
  */
 async function getAllowedAndBlockedHostsWithId() {
-    const requests: RequestSchema[] = await getRequests();
+    const requests: RequestSchema[] = await getRequestsInDB();
     let allowedHostsWithId: Record<string, number> = {};
     let blockedHostsWithId: Record<string, number> = {};
     const freeIds: number[] = await getNFreeIds(requests.length);

@@ -11,81 +11,89 @@ import {getSyncValue, GLOBAL_STRICT_MODE, ISD_ALL, ISD_WHITELIST, PER_SITE_STRIC
 import {globalStrictModeUpdated, initializeDnr, perSiteStrictModeUpdated, updateProxySettingsInDnrRules} from "./background_helpers/dnr_handler.js";
 import {initializeRequestInterceptionListeners} from "./background_helpers/request_interception_handler.js";
 import {initializeTabListeners} from "./background_helpers/tab_handler.js";
+import {runDatabasePerformance} from "./tests/database_benchmark.js";
 import {initializeIsChromium} from "./shared/utilities.js";
 
 export let GlobalStrictMode: SyncValueSchema[typeof GLOBAL_STRICT_MODE] = false;
 export let PerSiteStrictMode: SyncValueSchema[typeof PER_SITE_STRICT_MODE] = {};
 
-/*--- setup ------------------------------------------------------------------*/
-// Initialize IsChromium
-initializeIsChromium();
+const runBenchmark = true;
+if (runBenchmark) {
+    runDatabasePerformance().catch(err => {
+        console.error("Benchmark failed:", err);
+    });
+} else {
+    /*--- setup ------------------------------------------------------------------*/
+    // Initialize IsChromium
+    initializeIsChromium();
 
-const initializeExtension = async () => {
-    const storageGlobalStrictMode = await getSyncValue(GLOBAL_STRICT_MODE);
-    GlobalStrictMode = storageGlobalStrictMode ?? false;
-    if (storageGlobalStrictMode === undefined) await saveSyncValue(GLOBAL_STRICT_MODE, GlobalStrictMode);
-    console.log("[initializeExtension]: GlobalStrictMode:", GlobalStrictMode);
+    const initializeExtension = async () => {
+        const storageGlobalStrictMode = await getSyncValue(GLOBAL_STRICT_MODE);
+        GlobalStrictMode = storageGlobalStrictMode ?? false;
+        if (storageGlobalStrictMode === undefined) await saveSyncValue(GLOBAL_STRICT_MODE, GlobalStrictMode);
+        console.log("[initializeExtension]: GlobalStrictMode:", GlobalStrictMode);
 
-    const storagePerSiteStrictMode = await getSyncValue(PER_SITE_STRICT_MODE);
-    PerSiteStrictMode = storagePerSiteStrictMode ?? {};
-    if (storagePerSiteStrictMode === undefined) await saveSyncValue(PER_SITE_STRICT_MODE, PerSiteStrictMode);
-    console.log("[initializeExtension]: PerSiteStrictMode:", PerSiteStrictMode);
+        const storagePerSiteStrictMode = await getSyncValue(PER_SITE_STRICT_MODE);
+        PerSiteStrictMode = storagePerSiteStrictMode ?? {};
+        if (storagePerSiteStrictMode === undefined) await saveSyncValue(PER_SITE_STRICT_MODE, PerSiteStrictMode);
+        console.log("[initializeExtension]: PerSiteStrictMode:", PerSiteStrictMode);
 
-    /*--- PAC --------------------------------------------------------------------*/
-    // initializing proxy handler before DNR, as some DNR rules rely on the `proxyAddress`
-    await initializeProxyHandler()
-    /*--- END PAC ----------------------------------------------------------------*/
+        /*--- PAC --------------------------------------------------------------------*/
+        // initializing proxy handler before DNR, as some DNR rules rely on the `proxyAddress`
+        await initializeProxyHandler()
+        /*--- END PAC ----------------------------------------------------------------*/
 
-    await initializeDnr();
+        await initializeDnr();
 
-    // set initial icon to the neutral blue variant
-    await browser.action.setIcon({path: "/images/scion-38.jpg"});
-};
-initializeExtension();
+        // set initial icon to the neutral blue variant
+        await browser.action.setIcon({path: "/images/scion-38.jpg"});
+    };
+    initializeExtension();
 
-/*--- storage ----------------------------------------------------------------*/
+    /*--- storage ----------------------------------------------------------------*/
 
-browser.storage.onChanged.addListener(async (changes, namespace) => {
-    if (namespace === "sync") {
-        if (changes.isd_all?.newValue !== undefined) {
+    browser.storage.onChanged.addListener(async (changes, namespace) => {
+        if (namespace === "sync") {
+            if (changes.isd_all?.newValue !== undefined) {
 
-            const isdAll = changes.isd_all.newValue as SyncValueSchema[typeof ISD_ALL];
-            allowAllgeofence(isdAll);
+                const isdAll = changes.isd_all.newValue as SyncValueSchema[typeof ISD_ALL];
+                allowAllgeofence(isdAll);
 
-        } else if (changes.isd_whitelist?.newValue) {
+            } else if (changes.isd_whitelist?.newValue) {
 
-            const isdWhitelist = changes.isd_whitelist.newValue as SyncValueSchema[typeof ISD_WHITELIST];
-            geofence(isdWhitelist);
+                const isdWhitelist = changes.isd_whitelist.newValue as SyncValueSchema[typeof ISD_WHITELIST];
+                geofence(isdWhitelist);
 
-        } else if (changes.perSiteStrictMode?.newValue !== undefined) {
+            } else if (changes.perSiteStrictMode?.newValue !== undefined) {
 
-            PerSiteStrictMode = (changes.perSiteStrictMode.newValue || {}) as SyncValueSchema[typeof PER_SITE_STRICT_MODE];
+                PerSiteStrictMode = (changes.perSiteStrictMode.newValue || {}) as SyncValueSchema[typeof PER_SITE_STRICT_MODE];
 
-            // update DNR rules
-            await perSiteStrictModeUpdated();
+                // update DNR rules
+                await perSiteStrictModeUpdated();
 
-        } else if (changes.globalStrictMode?.newValue !== undefined) {
+            } else if (changes.globalStrictMode?.newValue !== undefined) {
 
-            GlobalStrictMode = changes.globalStrictMode.newValue as SyncValueSchema[typeof GLOBAL_STRICT_MODE];
+                GlobalStrictMode = changes.globalStrictMode.newValue as SyncValueSchema[typeof GLOBAL_STRICT_MODE];
 
-            // update DNR rules
-            await globalStrictModeUpdated();
+                // update DNR rules
+                await globalStrictModeUpdated();
 
-        } else if (changes.proxyScheme || changes.proxyHost || changes.proxyPort) {
-            // Reload all proxy settings if any changed
-            await loadProxySettings();
+            } else if (changes.proxyScheme || changes.proxyHost || changes.proxyPort) {
+                // Reload all proxy settings if any changed
+                await loadProxySettings();
 
-            resetPolicyCookie();
+                resetPolicyCookie();
 
-            await updateProxySettingsInDnrRules();
+                await updateProxySettingsInDnrRules();
+            }
         }
-    }
-});
+    });
 
-/*--- END storage ------------------------------------------------------------*/
+    /*--- END storage ------------------------------------------------------------*/
 
-/*--- tabs -------------------------------------------------------------------*/
-initializeTabListeners()
+    /*--- tabs -------------------------------------------------------------------*/
+    initializeTabListeners()
 
-/*--- requests ---------------------------------------------------------------*/
-initializeRequestInterceptionListeners()
+    /*--- requests ---------------------------------------------------------------*/
+    initializeRequestInterceptionListeners()
+}

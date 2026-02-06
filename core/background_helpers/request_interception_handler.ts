@@ -1,7 +1,8 @@
 import {DEFAULT_PROXY_HOST, proxyAddress, proxyHostResolveParam, proxyHostResolvePath, proxyURLResolvePath} from "./proxy_handler.js";
 import {addDnrRule} from "./dnr_handler.js";
 import {policyCookie} from "./geofence_handler.js";
-import {addRequest, addTabResource, clearTabResources, DOMAIN, getRequests, MAIN_DOMAIN, SCION_ENABLED, type RequestSchema} from "../shared/storage.js";
+import {addTabResource, clearTabResources} from "../shared/storage.js";
+import {addOrUpdateRequestInDB, findRequestInDB, DOMAIN, MAIN_DOMAIN, SCION_ENABLED, type RequestSchema} from "../shared/database.js";
 import {IsChromium, normalizedHostname, safeHostname} from "../shared/utilities.js";
 import {GlobalStrictMode, PerSiteStrictMode} from "../background.js";
 import type {WebNavigation, WebRequest} from "webextension-polyfill";
@@ -257,8 +258,7 @@ function onBeforeRequest(details: OnBeforeRequestDetails): undefined {
         }
 
         // ===== CREATE TAB RESOURCES ENTRY =====
-        const requests = await getRequests();
-        const hostnameScionEnabled = requests.find((request) => request.domain === hostname)?.scionEnabled;
+        const hostnameScionEnabled = (await findRequestInDB(hostname))?.scionEnabled;
 
         // mainframe requests are already handled above and cannot reach this code, thus it is safe to assume that initiator exists
         const initiatorHostname = safeHostname(initiator!);
@@ -376,11 +376,7 @@ async function createRequestEntry(hostname: string, initiator: string, currentTa
         [SCION_ENABLED]: scionEnabled,
     };
 
-    await addRequest(requestDBEntry, {
-        [DOMAIN]: requestDBEntry[DOMAIN],
-        [MAIN_DOMAIN]: requestDBEntry[MAIN_DOMAIN],
-        [SCION_ENABLED]: requestDBEntry[SCION_ENABLED],
-    });
+    await addOrUpdateRequestInDB(requestDBEntry);
 
     if (currentTabId !== browser.tabs.TAB_ID_NONE) await addTabResource(currentTabId, hostname, scionEnabled);
 }
