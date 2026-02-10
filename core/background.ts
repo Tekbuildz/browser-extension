@@ -12,6 +12,7 @@ import {globalStrictModeUpdated, initializeDnr, perSiteStrictModeUpdated, update
 import {initializeRequestInterceptionListeners} from "./background_helpers/request_interception_handler.js";
 import {initializeTabListeners} from "./background_helpers/tab_handler.js";
 import {runDatabasePerformance} from "./tests/database_benchmark.js";
+import {evictExpiredEntries} from "./shared/database.js";
 import {initializeIsChromium} from "./shared/utilities.js";
 
 export let GlobalStrictMode: SyncValueSchema[typeof GLOBAL_STRICT_MODE] = false;
@@ -37,6 +38,9 @@ if (runBenchmark) {
         PerSiteStrictMode = storagePerSiteStrictMode ?? {};
         if (storagePerSiteStrictMode === undefined) await saveSyncValue(PER_SITE_STRICT_MODE, PerSiteStrictMode);
         console.log("[initializeExtension]: PerSiteStrictMode:", PerSiteStrictMode);
+
+        // on startup of the SW, check for expired entries and evict them
+        await evictExpiredEntries();
 
         /*--- PAC --------------------------------------------------------------------*/
         // initializing proxy handler before DNR, as some DNR rules rely on the `proxyAddress`

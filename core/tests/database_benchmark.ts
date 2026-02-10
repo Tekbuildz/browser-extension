@@ -7,7 +7,7 @@ import {
     addOrUpdateRequestInDB,
     findRequestInDB,
     getRequestsInDB,
-    evictLRUBenchmark, getCount, getCustomCount, type RequestSchema,
+    evictLRUBenchmark, type RequestSchema,
 } from "../shared/database.js";
 
 // value in same order of magnitude as real limit (30k) but without hitting the automatic eviction-process when adding another test-entry
@@ -27,8 +27,6 @@ export async function runDatabasePerformance(): Promise<void> {
     await benchmarkFindMissing();
     await benchmarkGetAll();
     await benchmarkEvictLRU();
-    await benchmarkCount();
-    await benchmarkCustomCount();
 
     console.log("=== Benchmark complete ===");
 }
@@ -131,18 +129,6 @@ async function benchmarkEvictLRU(): Promise<void> {
     const t0 = now();
     await evictLRUBenchmark();
     log("Evict LRU", t0);
-}
-
-async function benchmarkCount(): Promise<void> {
-    const t0 = now();
-    const count = await getCount();
-    log(`Count: ${count}, took`, t0);
-}
-
-async function benchmarkCustomCount(): Promise<void> {
-    const t0 = now();
-    const count = await getCustomCount();
-    log(`CustomCount: ${count}, took`, t0);
 }
 
 // ------------------------------------------------------------
