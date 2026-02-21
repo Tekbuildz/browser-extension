@@ -18,7 +18,7 @@ import {initializeIsChromium} from "./shared/utilities.js";
 export let GlobalStrictMode: SyncValueSchema[typeof GLOBAL_STRICT_MODE] = false;
 export let PerSiteStrictMode: SyncValueSchema[typeof PER_SITE_STRICT_MODE] = {};
 
-const runBenchmark = true;
+const runBenchmark = false;
 if (runBenchmark) {
     runDatabasePerformance().catch(err => {
         console.error("Benchmark failed:", err);
