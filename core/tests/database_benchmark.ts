@@ -1,6 +1,8 @@
 // ------------------------------------------------------------
 // Performance benchmarking for IndexedDB-based storage functions
 // of `database.ts`
+// Note: This file is currently set up to be executed on startup/reload
+// of the extension. For usage in a pipeline, adaptations may be required.
 // ------------------------------------------------------------
 
 import {
