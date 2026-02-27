@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html data-theme="light">
 
 <head>
     <link href="css/tailwind.min.css" rel="stylesheet">
@@ -50,18 +50,57 @@
 
     <hr/>
 
-    <div class="flex p-1 shadow-sm">
-        <article id="proxy-check-container" class="text-sm w-full">
-            <div class="ac">
-                <input class="ac-input" id="proxy-status-toggle" name="proxy-status-toggle" type="checkbox"/>
-                <label for="proxy-status-toggle" class="ac-label flex items-center" id="proxy-status-label">
-                    <span id="proxy-status-message">Checking proxy status...</span>
-                    <a id="proxy-help-link" href="#" class="text-blue-600 hover:text-blue-800 ml-2 hidden">Need help?</a>
-                </label>
-                <article class="ac-text" id="proxy-details-content">
-                </article>
+    <div id="proxy-container" role="alert" class="card alert bg-gray-300 p-0">
+        <div class="collapse collapse-arrow">
+            <input type="checkbox"/>
+            <div class="collapse-title flex">
+                <svg xmlns="http://www.w3.org/2000/svg"
+                     fill="none"
+                     viewBox="0 0 24 24"
+                     class="stroke-info h-6 w-6 shrink-0"
+                     id="proxy-icon-0">
+                    <path stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <svg xmlns="http://www.w3.org/2000/svg"
+                     class="h-6 w-6 shrink-0 stroke-current hidden"
+                     fill="none"
+                     viewBox="0 0 24 24"
+                     id="proxy-icon-1">
+                    <path stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <svg xmlns="http://www.w3.org/2000/svg"
+                     class="h-6 w-6 shrink-0 stroke-current hidden"
+                     fill="none"
+                     viewBox="0 0 24 24"
+                     id="proxy-icon-2">
+                    <path stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+                <svg xmlns="http://www.w3.org/2000/svg"
+                     class="h-6 w-6 shrink-0 stroke-current hidden"
+                     fill="none"
+                     viewBox="0 0 24 24"
+                     id="proxy-icon-3">
+                    <path stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span id="proxy-status-message" class="ml-3 h-fit">Connected to proxy via HTTPS</span>
             </div>
-        </article>
+            <div class="collapse-content">
+                <p id="proxy-details-content">Proxy at https://forward-proxy.scion:9443</p>
+                <a id="proxy-help-link" href="#" class="text-blue-600 hover:text-blue-800 hidden">Need Help?</a>
+            </div>
+        </div>
     </div>
 
     <script type="module" src="vendor/browser-polyfill.js"></script>

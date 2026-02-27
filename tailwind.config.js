@@ -1,14 +1,12 @@
 module.exports = {
-  purge: [
-    './core/**/*.html',
-    './core/**/*.js'
-  ],
-  darkMode: false, // or 'media' or 'class'
-  theme: {
-    extend: {},
-  },
-  variants: {
-    extend: {},
-  },
-  plugins: [],
+    content: [
+        './core/**/*.{html, js, ts}',
+    ],
+    theme: {
+        extend: {},
+    },
+    plugins: [require("daisyui")],
+    daisyui: {
+        themes: ["light"],
+    }
 }
