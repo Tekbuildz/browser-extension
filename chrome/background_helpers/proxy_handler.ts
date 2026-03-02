@@ -1,6 +1,9 @@
-import {getSyncValues, PROXY_HOST, PROXY_PORT, PROXY_SCHEME, saveSyncValues, type SyncValueSchema} from "../shared/storage.js";
+import {AUTO_PROXY_CONFIG, getSyncValue, getSyncValues, PROXY_HOST, PROXY_PORT, PROXY_SCHEME, saveSyncValues, type SyncValueSchema} from "../shared/storage.js";
 import Mode = chrome.proxy.Mode;
 
+export type OnMessageMessageType = {
+    action: string;
+}
 type ProxyConfig = {
     [PROXY_SCHEME]: SyncValueSchema[typeof PROXY_SCHEME];
     [PROXY_HOST]: SyncValueSchema[typeof PROXY_HOST];
@@ -31,17 +34,17 @@ export const WPAD_URL = `http://wpad/wpad_scion.dat`;
 
 export async function initializeProxyHandler() {
     // Load saved configuration at startup
-    const {autoProxyConfig} = await chrome.storage.sync.get({autoProxyConfig: true});
+    const autoProxyConfig = await getSyncValue(AUTO_PROXY_CONFIG, true);
     if (autoProxyConfig) {
         await fetchAndApplyScionPAC();
     } else {
         await loadProxySettings();
     }
 
-    chrome.runtime.onMessage.addListener(async function (request, sender, sendResponse) {
-        if (request.action === "fetchAndApplyScionPAC") {
-            await fetchAndApplyScionPAC();
-            return true;
+    chrome.runtime.onMessage.addListener(function (request: any) {
+        const message = request as OnMessageMessageType;
+        if (message.action === "fetchAndApplyScionPAC") {
+            fetchAndApplyScionPAC();
         }
     });
 }

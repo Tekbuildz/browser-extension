@@ -31,34 +31,10 @@ export type SyncValueSchema = {
 type SessionValueSchema = Record<string, boolean>;
 // ===========================
 
-// ===== LOCAL STORAGE =====
-const REQUESTS = "requests" as const;
-export const DOMAIN = "domain" as const;
-export const MAIN_DOMAIN = "mainDomain" as const;
-export const SCION_ENABLED = "scionEnabled" as const;
-
-export type RequestSchema = {
-    [DOMAIN]: string;
-    [MAIN_DOMAIN]: string;
-    [SCION_ENABLED]: boolean;
-};
-type RequestsSchema = {
-    [REQUESTS]: RequestSchema[];
-};
-/**
- * Note that the string corresponding to the `REQUESTS` key is a serialized representation of the `RequestsSchema` type.
- */
-type LocalValueSchema = {
-    [REQUESTS]: string;
-};
-// =========================
-
-// ===== LOCAL STORAGE TAB RESOURCES =====
+// ===== SESSION STORAGE TAB RESOURCES =====
 /*
-Instead of keeping a map in a single key in local storage as done with the requests, here
-each host for each tab is its own key to a boolean indicating whether the host is scion-capable.
-The reason not to use a map is the possibility of data races (see the requests' description below why
-this is not an issue there):
+Each host for each tab is its own key to a boolean indicating whether the host is scion-capable.
+The reason not to use a map is the possibility of data races:
 - When two requests to subresources are made asynchronously, both read the map, make their change
   and save it, thus one change gets overwritten. Such a history might be: rA, rB, wA, wB.
   Now this problem could be solved through a lock, as is done with the DNR rule IDs.
@@ -148,95 +124,6 @@ export async function addTabResource(tabId: number, resourceHostname: string, re
 
 // ====================================
 
-// ===== REQUESTS ENTRY =====
-// Data races are not a real concern for the requests table, as this is not something the user will see/notice.
-// Instead, if a race causes the result of one lookup to be lost, the extension will continue operating as normal
-// and will simply refetch that resource later on if it is requested again (since the entry does not exist, from
-// its perspective it considers this host to be unknown).
-
-const MAX_REQUEST_ENTRIES = 50; // keep list small (sync storage quota)
-
-async function loadRequests(): Promise<RequestSchema[]> {
-    const serializedRequests = await getLocalValue(REQUESTS);
-    if (serializedRequests && serializedRequests !== "") {
-        try {
-            const requestsObject = JSON.parse(serializedRequests) as RequestsSchema;
-            if (!requestsObject[REQUESTS]) return [];
-            return requestsObject[REQUESTS];
-        } catch {
-            return [];
-        }
-    }
-
-    return [];
-}
-
-/**
- * Returns a list of requests that match the condition provided in the `filter` or all requests
- * if `filter` is left `undefined`.
- *
- * Note that hostnames in request-entries are in punycode format.
- */
-export async function getRequests<K extends keyof RequestSchema>(filter: Partial<RequestSchema> | undefined = undefined): Promise<RequestSchema[]> {
-    let requests: RequestSchema[] = await loadRequests();
-    if (filter === undefined) return requests;
-
-    const keys = Object.keys(filter) as K[];
-    keys.forEach((key: K) => {
-        requests = requests.filter((requestEntry: RequestSchema) => requestEntry[key] === filter[key]);
-    })
-    return requests;
-}
-
-/**
- * Returns the first request that matches the condition provided in the `filter` or the overall
- * first request if `filter` is left `undefined`.
- *
- * Note that hostnames in request-entries are in punycode format.
- */
-export async function firstRequest(filter: Partial<RequestSchema> | undefined = undefined): Promise<RequestSchema | null> {
-    const filteredRequests: RequestSchema[] = await getRequests(filter);
-    if (!filteredRequests || filteredRequests.length === 0) return null;
-    return filteredRequests[0];
-}
-
-/**
- * Adds the provided `entry` to the list of requests or updates the first one request that matches
- * the `replaceFilter`.
- *
- * Note that the hostnames contained in `entry` must already be in punycode format (see {@link normalizedHostname}).
- */
-export async function addRequest<K extends keyof RequestSchema>(entry: RequestSchema, replaceFilter: Partial<RequestSchema> | undefined = undefined) {
-    const requests: RequestSchema[] = await loadRequests();
-    while (requests.length > MAX_REQUEST_ENTRIES) requests.shift();
-
-    if (replaceFilter === undefined) {
-        requests.push(entry);
-    } else {
-
-        const index: number = requests.findIndex((requestEntry: RequestSchema) => {
-            let match = true;
-            const keys = Object.keys(replaceFilter) as K[];
-            for (const key of keys) {
-                if (requestEntry[key] !== replaceFilter[key]) {
-                    match = false;
-                    break;
-                }
-            }
-            return match;
-        });
-
-        if (index < 0) requests.push(entry);
-        else {
-            requests[index] = {...requests[index], ...entry};
-        }
-    }
-
-    await saveLocalValue(REQUESTS, JSON.stringify({requests}));
-}
-
-// ==========================
-
 // ===== CHROME STORAGE WRAPPER FUNCTIONS =====
 export async function saveSyncValue<K extends keyof SyncValueSchema>(key: K, value: SyncValueSchema[K]) {
     await chrome.storage.sync.set({[key]: value});
@@ -279,15 +166,6 @@ export async function getSyncValues<K extends keyof SyncValueSchema>(keysWithFal
     const result = {} as Pick<SyncValueSchema, K>;
     for (const key of keys) result[key] = storage[key] ?? keysWithFallbacks[key];
     return result;
-}
-
-async function saveLocalValue<K extends keyof LocalValueSchema>(key: K, value: LocalValueSchema[K]) {
-    await chrome.storage.local.set({[key]: value});
-}
-
-async function getLocalValue<K extends keyof LocalValueSchema>(key: K): Promise<LocalValueSchema[K]> {
-    const result = await chrome.storage.local.get([key]);
-    return result[key] as LocalValueSchema[K];
 }
 
 async function saveSessionValue(key: keyof SessionValueSchema, value: SessionValueSchema[string]) {

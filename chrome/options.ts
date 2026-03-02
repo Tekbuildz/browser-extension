@@ -19,7 +19,8 @@ import {
     saveSyncValue,
     saveSyncValues
 } from "./shared/storage.js";
-import {DEFAULT_PROXY_HOST, HTTPS_PROXY_PORT, HTTPS_PROXY_SCHEME} from "./background_helpers/proxy_handler.js";
+import {DEFAULT_PROXY_HOST, HTTPS_PROXY_PORT, HTTPS_PROXY_SCHEME, type OnMessageMessageType} from "./background_helpers/proxy_handler.js";
+import {initializeStrictModes} from "./shared/utilities.js";
 
 const DEFAULT_PROXY_SCHEME = HTTPS_PROXY_SCHEME;
 const DEFAULT_PROXY_PORT = HTTPS_PROXY_PORT;
@@ -57,6 +58,7 @@ const tableSitePreferencesRow = `
 
 const placeholderToggleID = "toggleISD-";
 
+initializeStrictModes();
 document.addEventListener("DOMContentLoaded", async () => {
     const isdSet = await getSyncValue(ISD_WHITELIST, []);
     displayToggleISD(isdSet);
@@ -258,7 +260,8 @@ function updateProxyFormState(isAutoConfig: boolean) {
     });
     
     if (isAutoConfig) {
-      chrome.runtime.sendMessage({ action: "fetchAndApplyScionPAC" });
+        const message = { action: "fetchAndApplyScionPAC"} as OnMessageMessageType;
+        chrome.runtime.sendMessage(message);
     }
 }
 

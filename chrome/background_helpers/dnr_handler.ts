@@ -1,7 +1,7 @@
-import {DOMAIN, getRequests, type RequestSchema} from "../shared/storage.js";
+import {DOMAIN, getRequestsInDB, type RequestSchema} from "../shared/database.js";
 import {proxyAddress, proxyHost, proxyURLResolveParam, proxyURLResolvePath, WPAD_URL} from "./proxy_handler.js";
 import {isHostScion} from "./request_interception_handler.js";
-import {GlobalStrictMode, PerSiteStrictMode, normalizedHostname} from "../shared/utilities.js";
+import {GlobalStrictMode, normalizedHostname, PerSiteStrictMode} from "../shared/utilities.js";
 import ResourceType = chrome.declarativeNetRequest.ResourceType;
 
 type Rule = chrome.declarativeNetRequest.Rule;
@@ -39,30 +39,14 @@ const SUBRESOURCES_REDIRECT_RULE_ID = 3;
 // sufficiently high to have space for generic DNR rules (specified above)
 const DOMAIN_SPECIFIC_RULES_START_ID = 10000;
 
-const EXT_PAGE = chrome.runtime.getURL('/checking.html');
+const CHECKING_PAGE = chrome.runtime.getURL('/checking.html');
 
 // extracting the hostname from the WPAD URL, as it needs to be excluded from matching rules
 // note that this might cause other resources that share the same hostname to be excluded too
 const WPAD_HOSTNAME = new URL(WPAD_URL).hostname;
 
 const MAIN_FRAME_TYPE: ResourceType[] = [ResourceType.MAIN_FRAME];
-const ALL_RESOURCE_TYPES = [
-    ResourceType.MAIN_FRAME,
-    ResourceType.SUB_FRAME,
-    ResourceType.XMLHTTPREQUEST,
-    ResourceType.SCRIPT,
-    ResourceType.IMAGE,
-    ResourceType.FONT,
-    ResourceType.MEDIA,
-    ResourceType.STYLESHEET,
-    ResourceType.OBJECT,
-    ResourceType.OTHER,
-    ResourceType.PING,
-    ResourceType.WEBSOCKET,
-    ResourceType.WEBTRANSPORT,
-    ResourceType.WEBBUNDLE,
-    ResourceType.CSP_REPORT,
-];
+const ALL_RESOURCE_TYPES: ResourceType[] = [ResourceType.MAIN_FRAME, ResourceType.SUB_FRAME, ResourceType.XMLHTTPREQUEST, ResourceType.SCRIPT, ResourceType.IMAGE, ResourceType.FONT, ResourceType.MEDIA, ResourceType.STYLESHEET, ResourceType.OBJECT, ResourceType.OTHER, ResourceType.PING, ResourceType.WEBSOCKET, ResourceType.WEBTRANSPORT, ResourceType.WEBBUNDLE, ResourceType.CSP_REPORT];
 
 /**
  * Initializes the DNR handler.
@@ -128,8 +112,12 @@ export async function perSiteStrictModeUpdated() {
             else if (Object.keys(allowedHostsWithId).includes(strictHost)) domainSpecificRules.push(createAllowRule(strictHost, allowedHostsWithId[strictHost]));
             else {
                 // using chrome.tabs.TAB_ID_NONE as the tab id, as no tab can be associated with this request
-                // isHostScion already adds the appropriate DNR rules based on the lookup result (including creating the DB entry for the host)
-                await isHostScion(strictHost, strictHost, chrome.tabs.TAB_ID_NONE, true);
+                // cannot use isHostScionHandleDnrRule here, since otherwise the call to updateRules below will remove the rule again, as it is not
+                // in the domainSpecificRules
+                const isScion = await isHostScion(strictHost, strictHost, chrome.tabs.TAB_ID_NONE);
+                const id = (await getNFreeIds(1))[0];
+                if (isScion) domainSpecificRules.push(createAllowRule(strictHost, id))
+                else domainSpecificRules.push(createBlockRule(strictHost, id));
             }
         }
 
@@ -195,8 +183,8 @@ export async function addDnrRule(host: string, scionEnabled: boolean, alreadyHas
 
         // if a rule for the `host` already exists, do not add another rule
         const currentRules = await chrome.declarativeNetRequest.getDynamicRules();
-        const currentUrlFilters = currentRules.map(rule => rule.condition.urlFilter);
-        if (currentUrlFilters.includes(urlFilterFromHost(host))) return;
+        const currentFilters = currentRules.map(rule => rule.condition.urlFilter);
+        if (currentFilters.includes(urlFilterFromHost(host))) return;
 
         const rule = scionEnabled ? createAllowRule(host, id) : createBlockRule(host, id);
         await chrome.declarativeNetRequest.updateDynamicRules({addRules: [rule], removeRuleIds: []})
@@ -252,7 +240,7 @@ function createMainFrameRedirectRule(): Rule {
             type: 'redirect',
             redirect: {
                 // match entire URL and append it to a hash (separator character expected by checking.js)
-                regexSubstitution: EXT_PAGE + '#\\0',
+                regexSubstitution: CHECKING_PAGE + '#\\0',
             },
         },
         condition: {
@@ -322,7 +310,7 @@ function createSubResourcesInitiatorRedirectRule(blockedInitiators: string[]): R
  * Note that this function is unsafe and must be wrapped with `withLock`.
  */
 async function getAllowedAndBlockedHostsWithId() {
-    const requests: RequestSchema[] = await getRequests();
+    const requests: RequestSchema[] = await getRequestsInDB();
     let allowedHostsWithId: Record<string, number> = {};
     let blockedHostsWithId: Record<string, number> = {};
     const freeIds: number[] = await getNFreeIds(requests.length);

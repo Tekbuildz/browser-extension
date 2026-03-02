@@ -1,8 +1,10 @@
-import {proxyAddress, proxyHostResolveParam, proxyHostResolvePath, proxyURLResolvePath} from "./proxy_handler.js";
+import {DEFAULT_PROXY_HOST, proxyAddress, proxyHostResolveParam, proxyHostResolvePath, proxyURLResolvePath} from "./proxy_handler.js";
 import {addDnrRule} from "./dnr_handler.js";
 import {policyCookie} from "./geofence_handler.js";
-import {addRequest, addTabResource, clearTabResources, DOMAIN, getRequests, MAIN_DOMAIN, SCION_ENABLED, type RequestSchema} from "../shared/storage.js";
+import {addOrUpdateRequestInDB, DOMAIN, findRequestInDB, MAIN_DOMAIN, type RequestSchema, SCION_ENABLED} from "../shared/database.js";
+import {addTabResource, clearTabResources} from "../shared/storage.js";
 import {GlobalStrictMode, PerSiteStrictMode, normalizedHostname, safeHostname} from "../shared/utilities.js";
+
 type WebNavigationTransitionCallbackDetails = chrome.webNavigation.WebNavigationTransitionCallbackDetails;
 type OnBeforeRequestDetails = chrome.webRequest.OnBeforeRequestDetails;
 type OnHeadersReceivedDetails = chrome.webRequest.OnHeadersReceivedDetails;
@@ -28,7 +30,13 @@ export function initializeRequestInterceptionListeners() {
     chrome.webNavigation.onCommitted.addListener(onCommitted);
 }
 
-export async function isHostScion(hostname: string, initiator: string, currentTabId: number, alreadyHasLock = false) {
+/**
+ * Verifies and returns whether the specified {@link hostname} is SCION-capable.
+ *
+ * Contrary to {@link isHostScionHandleDnrRule}, this function does not add any DNR rules, it does
+ * however create an entry in storage via {@link createRequestEntry}.
+ */
+export async function isHostScion(hostname: string, initiator: string, currentTabId: number) {
     let scionEnabled = false;
 
     const fetchUrl = `${proxyAddress}${proxyHostResolvePath}?${proxyHostResolveParam}=${hostname}`;
@@ -43,13 +51,22 @@ export async function isHostScion(hostname: string, initiator: string, currentTa
         if (scionEnabled) console.log("[DB]: scion enabled (after resolve): ", hostname);
         else console.log("[DB]: scion disabled (after resolve): ", hostname);
 
-        await handleAddDnrRule(hostname, scionEnabled, alreadyHasLock);
         await createRequestEntry(hostname, initiator, currentTabId, scionEnabled);
     } else {
         console.warn("[DB]: Resolution error: ", response.status);
     }
 
     console.log("[DB]: Resolution returned that host is scion-capable: ", scionEnabled);
+    return scionEnabled;
+}
+
+/**
+ * Verifies and returns whether the host is scion via {@link isHostScion}. Additionally, conditionally
+ * adds a DNR rule via {@link handleAddDnrRule}.
+ */
+export async function isHostScionHandleDnrRule(hostname: string, initiator: string, currentTabId: number, alreadyHasLock = false) {
+    const scionEnabled = await isHostScion(hostname, initiator, currentTabId);
+    await handleAddDnrRule(hostname, scionEnabled, alreadyHasLock);
     return scionEnabled;
 }
 
@@ -69,8 +86,15 @@ function withTabLock(tabId: number, fn: (() => Promise<void>)) {
     return next;
 }
 
-// map that maps the tabId to a state (of type: { gen, topOrigin, currentDocumentId }
-const tabState = new Map();
+// primarily use documentId, use requestOrigin as a fallback option
+const REQUEST_ORIGIN = "requestOrigin" as const;
+const DOCUMENT_ID = "documentId" as const;
+type State = {
+    [REQUEST_ORIGIN]: string | null;
+    [DOCUMENT_ID]: string | null;
+}
+
+const tabState = new Map<number, State>();
 
 /**
  * Returns the hostname of the provided `url` in punycode format.
@@ -111,11 +135,9 @@ function onCommitted(details: WebNavigationTransitionCallbackDetails) {
     if (details.frameId !== 0) return;
 
     withTabLock(details.tabId, async () => {
-        const state = tabState.get(details.tabId) ?? {gen: 0, topOrigin: null, currentDocId: null};
         tabState.set(details.tabId, {
-            ...state,
-            topOrigin: safeOrigin(details.url),
-            currentDocId: details.documentId ?? null,
+            [REQUEST_ORIGIN]: safeOrigin(details.url),
+            [DOCUMENT_ID]: details.documentId ?? null,
         });
     });
 }
@@ -126,19 +148,22 @@ function onCommitted(details: WebNavigationTransitionCallbackDetails) {
  * - when strict mode is on and the host of the request is already known to the extension
  */
 function onBeforeRequest(details: OnBeforeRequestDetails): undefined {
+    const hostname = safeProtocolFilteredHostname(details.url);
+    if (!hostname || hostname.includes(DEFAULT_PROXY_HOST)) return;
+
     const tabId = details.tabId;
     if (tabId === chrome.tabs.TAB_ID_NONE || tabId < 0) return;
 
-    const hostname = safeProtocolFilteredHostname(details.url);
-    if (!hostname) return;
+    const initiator = details.initiator;
+    const initiatorOrigin = initiator ? safeOrigin(initiator) : null;
 
     withTabLock(tabId, async () => {
-        let state = tabState.get(tabId) ?? {gen: 0, topOrigin: null, currentDocId: null};
-
         // if a mainframe is detected, immediately reset the tab resources (since a new page was opened in an existing tab,
         // thus previous information should be removed)
         if (details.type === "main_frame") {
-            state = {gen: state.gen + 1, topOrigin: safeOrigin(details.url), currentDocId: null};
+            // in chrome, documentId is only present in requests to sub-resources when in onBeforeRequest, onCommitted however
+            // does contain a documentId for main-frame requests
+            const state = {[REQUEST_ORIGIN]: safeOrigin(details.url), [DOCUMENT_ID]: null};
             tabState.set(tabId, state);
             // if global strict mode is on, clearing resources is handled by checking.html
             if (!GlobalStrictMode) await clearTabResources(tabId);
@@ -152,32 +177,33 @@ function onBeforeRequest(details: OnBeforeRequestDetails): undefined {
             return;
         }
 
+        const state = tabState.get(tabId) ?? {[REQUEST_ORIGIN]: null, [DOCUMENT_ID]: null};
+
         // ignore requests if the documentId does not match the one observed in onCommitted
         // If the case (was never the case in testing) should occur where onCommitted is invoked after a subresource
         // invokes onBeforeRequest, it is currently ignored. A future fix would be keep a buffer of non-matching requests.
         // Due to results from testing and simplicity (since this is purely for UI information), it was left out for now.
-        const docId = details.documentId ?? null;
-        const currentDocId = state.currentDocId;
+        const docId = details.documentId;
+        const currentDocId = state[DOCUMENT_ID];
 
         // note that the two following if-statements are intentionally left empty for improved structure/documentation
         if (currentDocId && docId && docId === currentDocId) {
             // accept and handle request if the documentId matches the committed documentId stored in the state
-        } else if (currentDocId && !docId && state.topOrigin && details.initiator === state.topOrigin) {
+        } else if (currentDocId && !docId && state[REQUEST_ORIGIN] && initiatorOrigin === state[REQUEST_ORIGIN]) {
             // fallback solution in case a request does not contain a documentId at all:
             // if the initiator matches the url that was present in the onCommitted call of the mainframe, that is
             // also accepted and handled
         } else {
             // reject cases where the documentId and initiator do not match
-            console.log("[onBeforeRequest]: Seems to be a request unrelated to the current tab: ", details);
+            console.log("[onBeforeRequest]: Seems to be a request unrelated to the current tab: ", details, state);
             return;
         }
 
         // ===== CREATE TAB RESOURCES ENTRY =====
-        const requests = await getRequests();
-        const hostnameScionEnabled = requests.find((request) => request.domain === hostname)?.scionEnabled;
+        const hostnameScionEnabled = (await findRequestInDB(hostname))?.scionEnabled;
 
         // mainframe requests are already handled above and cannot reach this code, thus it is safe to assume that initiator exists
-        const initiatorHostname = safeHostname(details.initiator!);
+        const initiatorHostname = safeHostname(initiator!);
         if (initiatorHostname === null) {
             console.error("[onBeforeRequest]: Failed to extract hostname from initiator in: ", details);
             return;
@@ -203,7 +229,7 @@ function onBeforeRequest(details: OnBeforeRequestDetails): undefined {
                 console.log(`[onBeforeRequest]: Strict mode disabled, host '${hostname}' is unknown, lookup is performed.`);
 
                 // perform a lookup for the host, if it has not been discovered previously and strict mode is off
-                await isHostScion(hostname, initiatorHostname ?? hostname, tabId);
+                await isHostScionHandleDnrRule(hostname, initiatorHostname ?? hostname, tabId);
                 return;
             }
 
@@ -292,11 +318,7 @@ async function createRequestEntry(hostname: string, initiator: string, currentTa
         [SCION_ENABLED]: scionEnabled,
     };
 
-    await addRequest(requestDBEntry, {
-        [DOMAIN]: requestDBEntry[DOMAIN],
-        [MAIN_DOMAIN]: requestDBEntry[MAIN_DOMAIN],
-        [SCION_ENABLED]: requestDBEntry[SCION_ENABLED],
-    });
+    await addOrUpdateRequestInDB(requestDBEntry);
 
     if (currentTabId !== chrome.tabs.TAB_ID_NONE) await addTabResource(currentTabId, hostname, scionEnabled);
 }
@@ -307,7 +329,7 @@ async function createRequestEntry(hostname: string, initiator: string, currentTa
  */
 async function handleAddDnrRule(hostname: string, scionEnabled: boolean, alreadyHasLock: boolean) {
     const strictHosts = Object.entries(PerSiteStrictMode)
-        .filter(([_, isScion]: [string, boolean]) => isScion)
+        .filter(([_, isEnabled]: [string, boolean]) => isEnabled)
         .map(([host, _]: [string, boolean]) => normalizedHostname(host));
 
     if (GlobalStrictMode || strictHosts.includes(hostname)) {

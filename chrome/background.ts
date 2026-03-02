@@ -8,12 +8,16 @@ import {globalStrictModeUpdated, initializeDnr, perSiteStrictModeUpdated, update
 import {initializeRequestInterceptionListeners} from "./background_helpers/request_interception_handler.js";
 import {initializeTabListeners} from "./background_helpers/tab_handler.js";
 import {initializeStrictModes, setGlobalStrictMode, setPerSiteStrictMode} from "./shared/utilities.js";
+import {evictExpiredEntries} from "./shared/database.js";
 
 
 /*--- setup ------------------------------------------------------------------*/
 
 const initializeExtension = async () => {
     await initializeStrictModes();
+
+    // on startup of the SW, check for expired entries and evict them
+    await evictExpiredEntries();
 
     /*--- PAC --------------------------------------------------------------------*/
     // initializing proxy handler before DNR, as some DNR rules rely on the `proxyAddress`
