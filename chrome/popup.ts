@@ -2,9 +2,9 @@
 'use strict';
 
 
-import {getSyncValue, getSyncValues, getTabResources, PER_SITE_STRICT_MODE, PROXY_HOST, PROXY_PORT, PROXY_SCHEME, saveSyncValue, type SyncValueSchema} from "./shared/storage.js";
-import {DEFAULT_PROXY_HOST, HTTPS_PROXY_SCHEME, HTTPS_PROXY_PORT, proxyPathUsagePath, proxyHealthCheckPath} from "./background_helpers/proxy_handler.js";
-import {safeHostname} from "./shared/utilities.js";
+import {getSyncValues, getTabResources, PER_SITE_STRICT_MODE, PROXY_HOST, PROXY_PORT, PROXY_SCHEME, saveSyncValue} from "./shared/storage.js";
+import {DEFAULT_PROXY_HOST, HTTPS_PROXY_PORT, HTTPS_PROXY_SCHEME, proxyHealthCheckPath, proxyPathUsagePath} from "./background_helpers/proxy_handler.js";
+import {initializeStrictModes, PerSiteStrictMode, safeHostname, setPerSiteStrictMode} from "./shared/utilities.js";
 
 type Tab = chrome.tabs.Tab;
 type PerDomainPathUsage = { Domain: string, Path: string[], Strategy: string };
@@ -403,7 +403,6 @@ const asNameMap: Record<string, string> = {
 let proxyAddress = `${DEFAULT_PROXY_SCHEME}://${DEFAULT_PROXY_HOST}:${DEFAULT_PROXY_PORT}`
 
 
-let perSiteStrictMode: SyncValueSchema[typeof PER_SITE_STRICT_MODE] = {};
 let popupMainDomain = "";
 
 checkboxRunning.onclick = toggleExtensionRunning;
@@ -412,10 +411,7 @@ buttonOptionsButton.addEventListener('click', function () {
     chrome.tabs.create({'url': 'chrome://extensions/?options=' + chrome.runtime.id});
 });
 
-getSyncValue(PER_SITE_STRICT_MODE, {}).then((result) => {
-    perSiteStrictMode = result;
-    loadRequestInfo();
-});
+initializeStrictModes();
 
 document.addEventListener("DOMContentLoaded", () => {
     getSyncValues({
@@ -632,7 +628,7 @@ function returnCountryCode(isd: number) {
 function toggleExtensionRunning() {
     toggleRunning.checked = !toggleRunning.checked;
     const newPerSiteStrictMode = {
-        ...perSiteStrictMode,
+        ...PerSiteStrictMode,
         [popupMainDomain]: toggleRunning.checked,
     };
 
@@ -647,9 +643,8 @@ function toggleExtensionRunning() {
     }
 
     saveSyncValue(PER_SITE_STRICT_MODE, newPerSiteStrictMode).then(() => {
-        perSiteStrictMode = newPerSiteStrictMode;
+        setPerSiteStrictMode(newPerSiteStrictMode);
     });
-
 }
 
 async function loadRequestInfo() {
@@ -676,7 +671,7 @@ async function loadRequestInfo() {
     const resources = await getTabResources(activeTabId) ?? [];
     const mainDomainSCIONEnabled = resources.find(resource => resource[0] === hostname && resource[1]);
 
-    if (perSiteStrictMode[hostname]) {
+    if (PerSiteStrictMode[hostname]) {
         mainDomain.innerHTML = "SCION preference for " + hostname;
         toggleRunning.checked = true; // true
         toggleRunning.classList.remove("halfchecked");

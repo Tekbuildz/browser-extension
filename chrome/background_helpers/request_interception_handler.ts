@@ -2,8 +2,7 @@ import {proxyAddress, proxyHostResolveParam, proxyHostResolvePath, proxyURLResol
 import {addDnrRule} from "./dnr_handler.js";
 import {policyCookie} from "./geofence_handler.js";
 import {addRequest, addTabResource, clearTabResources, DOMAIN, getRequests, MAIN_DOMAIN, SCION_ENABLED, type RequestSchema} from "../shared/storage.js";
-import {normalizedHostname, safeHostname} from "../shared/utilities.js";
-import {GlobalStrictMode, PerSiteStrictMode} from "../background.js";
+import {GlobalStrictMode, PerSiteStrictMode, normalizedHostname, safeHostname} from "../shared/utilities.js";
 type WebNavigationTransitionCallbackDetails = chrome.webNavigation.WebNavigationTransitionCallbackDetails;
 type OnBeforeRequestDetails = chrome.webRequest.OnBeforeRequestDetails;
 type OnHeadersReceivedDetails = chrome.webRequest.OnHeadersReceivedDetails;

@@ -7,22 +7,13 @@ import {EXTENSION_RUNNING, getSyncValue, GLOBAL_STRICT_MODE, ISD_ALL, ISD_WHITEL
 import {globalStrictModeUpdated, initializeDnr, perSiteStrictModeUpdated, updateProxySettingsInDnrRules} from "./background_helpers/dnr_handler.js";
 import {initializeRequestInterceptionListeners} from "./background_helpers/request_interception_handler.js";
 import {initializeTabListeners} from "./background_helpers/tab_handler.js";
+import {initializeStrictModes, setGlobalStrictMode, setPerSiteStrictMode} from "./shared/utilities.js";
 
-export let GlobalStrictMode: SyncValueSchema[typeof GLOBAL_STRICT_MODE] = false;
-export let PerSiteStrictMode: SyncValueSchema[typeof PER_SITE_STRICT_MODE] = {};
 
 /*--- setup ------------------------------------------------------------------*/
 
 const initializeExtension = async () => {
-    const storageGlobalStrictMode = await getSyncValue(GLOBAL_STRICT_MODE);
-    GlobalStrictMode = storageGlobalStrictMode ?? false;
-    if (storageGlobalStrictMode === undefined) await saveSyncValue(GLOBAL_STRICT_MODE, GlobalStrictMode);
-    console.log(`[initializeExtension]: GlobalStrictMode: ${GlobalStrictMode}`);
-
-    const storagePerSiteStrictMode = await getSyncValue(PER_SITE_STRICT_MODE);
-    PerSiteStrictMode = storagePerSiteStrictMode ?? {};
-    if (storagePerSiteStrictMode === undefined) await saveSyncValue(PER_SITE_STRICT_MODE, PerSiteStrictMode);
-    console.log(`[initializeExtension]: PerSiteStrictMode: ${PerSiteStrictMode}`);
+    await initializeStrictModes();
 
     /*--- PAC --------------------------------------------------------------------*/
     // initializing proxy handler before DNR, as some DNR rules rely on the `proxyAddress`
@@ -60,14 +51,16 @@ chrome.storage.onChanged.addListener(async (changes, namespace) => {
 
         } else if (changes.perSiteStrictMode?.newValue !== undefined) {
 
-            PerSiteStrictMode = (changes.perSiteStrictMode.newValue || {}) as SyncValueSchema[typeof PER_SITE_STRICT_MODE];
+            const perSiteStrictMode = (changes.perSiteStrictMode.newValue || {}) as SyncValueSchema[typeof PER_SITE_STRICT_MODE];
+            setPerSiteStrictMode(perSiteStrictMode);
 
             // update DNR rules
             await perSiteStrictModeUpdated();
 
         } else if (changes.globalStrictMode?.newValue !== undefined) {
 
-            GlobalStrictMode = changes.globalStrictMode.newValue as SyncValueSchema[typeof GLOBAL_STRICT_MODE];
+            const globalStrictMode = changes.globalStrictMode.newValue as SyncValueSchema[typeof GLOBAL_STRICT_MODE];
+            setGlobalStrictMode(globalStrictMode);
 
             // update DNR rules
             await globalStrictModeUpdated();
