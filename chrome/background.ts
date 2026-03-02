@@ -3,7 +3,7 @@
 
 import {initializeProxyHandler, loadProxySettings} from "./background_helpers/proxy_handler.js";
 import {allowAllgeofence, geofence, resetPolicyCookie} from "./background_helpers/geofence_handler.js";
-import {EXTENSION_RUNNING, getSyncValue, GLOBAL_STRICT_MODE, ISD_ALL, ISD_WHITELIST, PER_SITE_STRICT_MODE, saveSyncValue, type SyncValueSchema} from "./shared/storage.js";
+import {GLOBAL_STRICT_MODE, ISD_ALL, ISD_WHITELIST, PER_SITE_STRICT_MODE, type SyncValueSchema} from "./shared/storage.js";
 import {globalStrictModeUpdated, initializeDnr, perSiteStrictModeUpdated, updateProxySettingsInDnrRules} from "./background_helpers/dnr_handler.js";
 import {initializeRequestInterceptionListeners} from "./background_helpers/request_interception_handler.js";
 import {initializeTabListeners} from "./background_helpers/tab_handler.js";
@@ -21,25 +21,17 @@ const initializeExtension = async () => {
     /*--- END PAC ----------------------------------------------------------------*/
 
     await initializeDnr();
+
+    // set initial icon to the neutral blue variant
+    await chrome.action.setIcon({path: "/images/scion-38.jpg"});
 };
 initializeExtension();
-
-// Do icon setup etc at startup
-getSyncValue(EXTENSION_RUNNING).then(async extensionRunning => {
-    await updateRunningIcon(extensionRunning);
-});
 
 /*--- storage ----------------------------------------------------------------*/
 
 chrome.storage.onChanged.addListener(async (changes, namespace) => {
-    // In case we disable running for the extension, lets put an empty set for now
-    // Later, we could remove the PAC script, but doesn't impact us now...
     if (namespace === "sync") {
-        if (changes.extension_running?.newValue !== undefined) {
-
-            await updateRunningIcon(changes.extension_running.newValue);
-
-        } else if (changes.isd_all?.newValue !== undefined) {
+        if (changes.isd_all?.newValue !== undefined) {
 
             const isdAll = changes.isd_all.newValue as SyncValueSchema[typeof ISD_ALL];
             allowAllgeofence(isdAll);
@@ -74,16 +66,7 @@ chrome.storage.onChanged.addListener(async (changes, namespace) => {
             await updateProxySettingsInDnrRules();
         }
     }
-})
-
-// Changes icon depending on the extension is running or not
-async function updateRunningIcon(extensionRunning: any) {
-    if (extensionRunning) {
-        await chrome.action.setIcon({path: "/images/scion-38.jpg"});
-    } else {
-        await chrome.action.setIcon({path: "/images/scion-38_disabled.jpg"});
-    }
-}
+});
 
 /*--- END storage ------------------------------------------------------------*/
 
