@@ -188,7 +188,7 @@ function updatePathUsageVisuals(pathUsage: PerDomainPathUsage) {
     pathUsageSite.textContent = pathUsage.Domain;
     pathUsageStrategy.textContent = pathUsage.Strategy;
     pathUsageISDs.innerHTML = [...isds].map((isd: number) => `
-        <div class="flex flex-row space-x-2">
+        <div class="flex flex-row space-x-2 items-center">
             <img style="height: 25px" src=${getFlagPath(returnCountryCode(isd))} alt=""/>
             <p>(${returnCountryCode(isd)})</p>
         </div>
