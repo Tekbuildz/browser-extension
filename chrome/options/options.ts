@@ -17,7 +17,7 @@ import {
     PROXY_SCHEME,
     saveSyncValue,
     saveSyncValues
-} from "./shared/storage.js";
+} from "../shared/storage.js";
 import {
     DEFAULT_PROXY_HOST,
     HTTPS_PROXY_PORT,
@@ -27,8 +27,8 @@ import {
     proxyHost,
     proxyPort,
     proxyScheme
-} from "./background_helpers/proxy_handler.js";
-import {GlobalStrictMode, initializeStrictModes} from "./shared/utilities.js";
+} from "../background_helpers/proxy_handler.js";
+import {GlobalStrictMode, initializeStrictModes} from "../shared/utilities.js";
 
 const DEFAULT_PROXY_SCHEME = HTTPS_PROXY_SCHEME;
 const DEFAULT_PROXY_PORT = HTTPS_PROXY_PORT;
