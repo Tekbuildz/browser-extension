@@ -1,7 +1,7 @@
 import {isHostScionHandleDnrRule} from "./background_helpers/request_interception_handler.js";
 import {clearTabResources} from "./shared/storage.js";
 import {initializeStrictModes, safeHostname} from "./shared/utilities.js";
-import {initializeProxyHandler} from "./background_helpers/proxy_handler.js";
+import {loadProxySettings} from "./background_helpers/proxy_handler.js";
 
 const titleElement = document.getElementById("title") as HTMLHeadingElement;
 const spinnerElement = document.getElementById("spinner") as HTMLDivElement;
@@ -10,7 +10,7 @@ const originalUrlElement = document.getElementById('original-url') as HTMLParagr
 
 async function init() {
     await initializeStrictModes();
-    await initializeProxyHandler();
+    await loadProxySettings();
 
     statusElement.textContent = 'Determining the original page you tried to open...';
 

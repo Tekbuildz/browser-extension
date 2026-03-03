@@ -1,5 +1,5 @@
 import {DOMAIN, getRequestsInDB, type RequestSchema} from "../shared/database.js";
-import {proxyAddress, proxyHost, proxyURLResolveParam, proxyURLResolvePath, WPAD_URL} from "./proxy_handler.js";
+import {proxyAddress, proxyHost, proxyURLResolveParam, proxyURLResolvePath, WPAD_HOSTNAME} from "./proxy_handler.js";
 import {isHostScion} from "./request_interception_handler.js";
 import {GlobalStrictMode, normalizedHostname, PerSiteStrictMode} from "../shared/utilities.js";
 import ResourceType = chrome.declarativeNetRequest.ResourceType;
@@ -40,10 +40,6 @@ const SUBRESOURCES_REDIRECT_RULE_ID = 3;
 const DOMAIN_SPECIFIC_RULES_START_ID = 10000;
 
 const CHECKING_PAGE = chrome.runtime.getURL('/checking.html');
-
-// extracting the hostname from the WPAD URL, as it needs to be excluded from matching rules
-// note that this might cause other resources that share the same hostname to be excluded too
-const WPAD_HOSTNAME = new URL(WPAD_URL).hostname;
 
 const MAIN_FRAME_TYPE: ResourceType[] = [ResourceType.MAIN_FRAME];
 const ALL_RESOURCE_TYPES: ResourceType[] = [ResourceType.MAIN_FRAME, ResourceType.SUB_FRAME, ResourceType.XMLHTTPREQUEST, ResourceType.SCRIPT, ResourceType.IMAGE, ResourceType.FONT, ResourceType.MEDIA, ResourceType.STYLESHEET, ResourceType.OBJECT, ResourceType.OTHER, ResourceType.PING, ResourceType.WEBSOCKET, ResourceType.WEBTRANSPORT, ResourceType.WEBBUNDLE, ResourceType.CSP_REPORT];
@@ -132,6 +128,15 @@ export async function perSiteStrictModeUpdated() {
 
         await updateRules(genericRules, domainSpecificRules);
     });
+}
+
+/**
+ * Removes all currently enabled DNR rules.
+ *
+ * To reset the rules to match the information in storage, call {@link globalStrictModeUpdated}.
+ */
+export async function removeAllRules() {
+    await updateRules([], []);
 }
 
 /**

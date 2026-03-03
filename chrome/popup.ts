@@ -2,16 +2,13 @@
 'use strict';
 
 
-import {getSyncValues, getTabResources, PER_SITE_STRICT_MODE, PROXY_HOST, PROXY_PORT, PROXY_SCHEME, saveSyncValue} from "./shared/storage.js";
-import {DEFAULT_PROXY_HOST, HTTPS_PROXY_PORT, HTTPS_PROXY_SCHEME, proxyHealthCheckPath, proxyPathUsagePath} from "./background_helpers/proxy_handler.js";
+import {getTabResources, PER_SITE_STRICT_MODE, saveSyncValue} from "./shared/storage.js";
+import {loadProxySettingsNoUpdate, proxyAddress, proxyHealthCheckPath, proxyPathUsagePath} from "./background_helpers/proxy_handler.js";
 import {initializeStrictModes, PerSiteStrictMode, safeHostname, setPerSiteStrictMode} from "./shared/utilities.js";
 
 type Tab = chrome.tabs.Tab;
 type PerDomainPathUsage = { Domain: string, Path: string[], Strategy: string };
 type ProxyPathUsageResponse = PerDomainPathUsage[];
-
-const DEFAULT_PROXY_SCHEME = HTTPS_PROXY_SCHEME;
-const DEFAULT_PROXY_PORT = HTTPS_PROXY_PORT;
 
 const togglePerSiteStrictModeCheckbox = document.getElementById('togglePerSiteStrictMode') as HTMLInputElement;
 const togglePerSiteStrictModeContainer = document.getElementById('togglePerSiteStrictModeContainer') as HTMLDivElement;
@@ -400,68 +397,21 @@ const asNameMap: Record<string, string> = {
     "2:0:138": "IKEA AG"
 };
 
-let proxyAddress = `${DEFAULT_PROXY_SCHEME}://${DEFAULT_PROXY_HOST}:${DEFAULT_PROXY_PORT}`
-
-
 let popupMainDomain = "";
 
-togglePerSiteStrictModeContainer.onclick = togglePerSiteStrictMode;
-
-buttonOptionsButton.addEventListener('click', function () {
-    chrome.tabs.create({'url': 'chrome://extensions/?options=' + chrome.runtime.id});
-});
-
-initializeStrictModes();
-
 document.addEventListener("DOMContentLoaded", async () => {
-    togglePerSiteStrictModeCheckbox.addEventListener("change", togglePerSiteStrictMode);
-    const result = await getSyncValues({
-        [PROXY_SCHEME]: DEFAULT_PROXY_SCHEME,
-        [PROXY_HOST]: DEFAULT_PROXY_HOST,
-        [PROXY_PORT]: DEFAULT_PROXY_PORT,
-    });
+    await initializeStrictModes();
+    await loadProxySettingsNoUpdate();
+    await loadRequestInfo();
 
-    let proxyScheme = result[PROXY_SCHEME];
-    let proxyHost = result[PROXY_HOST];
-    let proxyPort = result[PROXY_PORT];
-    proxyAddress = `${proxyScheme}://${proxyHost}:${proxyPort}`;
+    togglePerSiteStrictModeCheckbox.addEventListener("change", togglePerSiteStrictMode);
+    togglePerSiteStrictModeContainer.onclick = togglePerSiteStrictMode;
+    buttonOptionsButton.addEventListener('click', function () {
+        chrome.tabs.create({'url': 'chrome://extensions/?options=' + chrome.runtime.id});
+    });
 
     checkProxyStatus();
 });
-
-const updatePathUsage = () => {
-    pathUsageContainer.innerHTML = "";
-
-    console.log("get path usage")
-    fetch(`${proxyAddress}${proxyPathUsagePath}`, {
-        method: "GET"
-    }).then(response => {
-        if (response.status === 200) {
-            response.json().then(res => {
-                const json = res as ProxyPathUsageResponse;
-                console.log(json)
-                const startIndex = 2; // The first indices are already used the parent container
-                if (!json || json.length === 0) {
-                    pathUsageContainer.innerHTML = "<p>No path usage data available\n</p>" + "<p>Try to configure your own policies to have acces to path usage data (under <i>Manage Preferences</i>).</p>";
-                }
-
-                json.forEach((pathUsage: PerDomainPathUsage) => {
-                    console.log(pathUsage.Domain.split(":")[0])
-                    // we only expect one match
-                    if (popupMainDomain && pathUsage.Domain.split(":")[0] === popupMainDomain) {
-                        let pathUsageChild = newPathUsageChild(pathUsage, startIndex);
-                        pathUsageContainer.innerHTML += pathUsageChild;
-                    }
-                })
-                if (pathUsageContainer.innerHTML === "") {
-                    pathUsageContainer.innerHTML = "<p>No path usage data available for " + (popupMainDomain || "current domain") + "\n</p>" + "<p>Try to configure your own policies to have acces to path usage data (under <i>Manage Preferences</i>).</p>";
-                    return;
-                }
-            });
-        }
-    });
-
-};
 
 function checkProxyStatus() {
     proxyStatusMessage.textContent = "Checking proxy status...";
@@ -718,4 +668,37 @@ async function loadRequestInfo() {
     // Update path usage for the current domain
     updatePathUsage();
 }
+
+const updatePathUsage = () => {
+    pathUsageContainer.innerHTML = "";
+
+    console.log("get path usage")
+    fetch(`${proxyAddress}${proxyPathUsagePath}`, {
+        method: "GET"
+    }).then(response => {
+        if (response.status === 200) {
+            response.json().then(res => {
+                const json = res as ProxyPathUsageResponse;
+                console.log(json)
+                const startIndex = 2; // The first indices are already used the parent container
+                if (!json || json.length === 0) {
+                    pathUsageContainer.innerHTML = "<p>No path usage data available\n</p>" + "<p>Try to configure your own policies to have acces to path usage data (under <i>Manage Preferences</i>).</p>";
+                }
+
+                json.forEach((pathUsage: PerDomainPathUsage) => {
+                    console.log(pathUsage.Domain.split(":")[0])
+                    // we only expect one match
+                    if (popupMainDomain && pathUsage.Domain.split(":")[0] === popupMainDomain) {
+                        let pathUsageChild = newPathUsageChild(pathUsage, startIndex);
+                        pathUsageContainer.innerHTML += pathUsageChild;
+                    }
+                })
+                if (pathUsageContainer.innerHTML === "") {
+                    pathUsageContainer.innerHTML = "<p>No path usage data available for " + (popupMainDomain || "current domain") + "\n</p>" + "<p>Try to configure your own policies to have acces to path usage data (under <i>Manage Preferences</i>).</p>";
+                    return;
+                }
+            });
+        }
+    });
+};
 
