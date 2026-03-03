@@ -2,9 +2,9 @@
 'use strict';
 
 
-import {getTabResources, PER_SITE_STRICT_MODE, saveSyncValue} from "./shared/storage.js";
-import {loadProxySettingsNoUpdate, proxyAddress, proxyHealthCheckPath, proxyPathUsagePath} from "./background_helpers/proxy_handler.js";
-import {initializeStrictModes, PerSiteStrictMode, safeHostname, setPerSiteStrictMode} from "./shared/utilities.js";
+import {getTabResources, PER_SITE_STRICT_MODE, saveSyncValue} from "../shared/storage.js";
+import {loadProxySettingsNoUpdate, proxyAddress, proxyHealthCheckPath, proxyPathUsagePath} from "../background_helpers/proxy_handler.js";
+import {initializeStrictModes, PerSiteStrictMode, safeHostname, setPerSiteStrictMode} from "../shared/utilities.js";
 
 type Tab = chrome.tabs.Tab;
 type PerDomainPathUsage = { Domain: string, Path: string[], Strategy: string };
