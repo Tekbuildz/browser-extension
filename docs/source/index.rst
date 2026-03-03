@@ -6,13 +6,6 @@ You can find the source code on https://github.com/scionproto-contrib/browser-ex
 
 The SCION browser extension is part of a broader group of `SCION Applications <https://docs.scion.org/projects/scion-applications/en/latest>`_ .
 
-.. note::
-    The `latest version <https://github.com/scionproto-contrib/browser-extension/releases/tag/v0.3.0-beta>`_ of the extension  
-    contains a known limitation of 30000 DNR rules (equivalent of resolved hostnames under ``strict-mode``). 
-    Therefore, in case that limit is exceeded, ``strict-mode`` may no longer behave as intended. 
-    In this case, it is advised to reinstall the extension.
-    A future release will address this issue.
-
 
 Requirements
 ------------
