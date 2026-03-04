@@ -65,7 +65,7 @@ import {GlobalStrictMode, initializeStrictModes, removeEmptyEntries, toSet} from
 // </td>
 // </tr>`
 
-const placeholderToggleID = "toggleISD-";
+// const placeholderToggleID = "toggleISD-";
 
 document.addEventListener("DOMContentLoaded", async () => {
     await initializeStrictModes();
@@ -77,14 +77,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     //     lineStrictMode.style.backgroundColor = '#cccccc';
     // }
 
-    const isdSet = await getSyncValue(ISD_WHITELIST, []);
-    displayToggleISD(isdSet);
+    // const isdSet = await getSyncValue(ISD_WHITELIST, []);
+    // displayToggleISD(isdSet);
 
-    const trafficToggle = document.getElementById("allowAllTrafficToggle") as HTMLInputElement;
-    trafficToggle.checked = await getSyncValue(ISD_ALL, true);
+    // const trafficToggle = document.getElementById("allowAllTrafficToggle") as HTMLInputElement;
+    // trafficToggle.checked = await getSyncValue(ISD_ALL, true);
 
-    registerToggleISDHandler();
-    registerToggleAllHandler();
+    // registerToggleISDHandler();
+    // registerToggleAllHandler();
 
     // Load saved settings
     // await loadProxySettingsNoUpdate();
@@ -106,20 +106,20 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 /* Optional Javascript to close the radio button version by clicking it again */
-const myRadios = document.getElementsByName('tabs2') as NodeListOf<HTMLInputElement>;
-let setCheck: HTMLInputElement | null = null;
-let x: number;
-for (x = 0; x < myRadios.length; x++) {
-    const radio: HTMLInputElement = myRadios[x]!;
-    radio.onclick = function () {
-        if (setCheck != radio) {
-            setCheck = radio;
-        } else {
-            radio.checked = false;
-            setCheck = null;
-        }
-    };
-}
+// const myRadios = document.getElementsByName('tabs2') as NodeListOf<HTMLInputElement>;
+// let setCheck: HTMLInputElement | null = null;
+// let x: number;
+// for (x = 0; x < myRadios.length; x++) {
+//     const radio: HTMLInputElement = myRadios[x]!;
+//     radio.onclick = function () {
+//         if (setCheck != radio) {
+//             setCheck = radio;
+//         } else {
+//             radio.checked = false;
+//             setCheck = null;
+//         }
+//     };
+// }
 
 // updateSitePreferences();
 
@@ -152,36 +152,36 @@ for (x = 0; x < myRadios.length; x++) {
 //     }
 // });
 
-function displayToggleISD(isdSet: string[]) {
-    if (!isdSet) {
-        return;
-    }
-    for (const id of isdSet) {
-        const isdToggle = document.getElementById(placeholderToggleID + id) as HTMLInputElement;
-        if (isdToggle) isdToggle.checked = true;
-    }
-}
+// function displayToggleISD(isdSet: string[]) {
+//     if (!isdSet) {
+//         return;
+//     }
+//     for (const id of isdSet) {
+//         const isdToggle = document.getElementById(placeholderToggleID + id) as HTMLInputElement;
+//         if (isdToggle) isdToggle.checked = true;
+//     }
+// }
 
-function registerToggleISDHandler() {
-    const isdToggles = document.getElementsByClassName("isd-entry");
-    for (let i = 0; i < isdToggles.length; i++) {
-        const isdToggle = isdToggles[i] as HTMLInputElement;
-        const parentDiv = isdToggle.parentElement!;
-        parentDiv.onclick = () => {
-            toggleISD(isdToggles[i].id);
-        }
-    }
-}
+// function registerToggleISDHandler() {
+//     const isdToggles = document.getElementsByClassName("isd-entry");
+//     for (let i = 0; i < isdToggles.length; i++) {
+//         const isdToggle = isdToggles[i] as HTMLInputElement;
+//         const parentDiv = isdToggle.parentElement!;
+//         parentDiv.onclick = () => {
+//             toggleISD(isdToggles[i].id);
+//         }
+//     }
+// }
 
 
-function registerToggleAllHandler() {
-    const allToggle = document.getElementById("allowAllTrafficToggle") as HTMLInputElement;
-    console.log(allToggle)
-    const parentDiv = allToggle.parentElement!;
-    parentDiv.onclick = () => {
-        toggleAll(allToggle.id);
-    }
-}
+// function registerToggleAllHandler() {
+//     const allToggle = document.getElementById("allowAllTrafficToggle") as HTMLInputElement;
+//     console.log(allToggle)
+//     const parentDiv = allToggle.parentElement!;
+//     parentDiv.onclick = () => {
+//         toggleAll(allToggle.id);
+//     }
+// }
 
 function toggleISD(checked_id: string) {
     const isdToggle = document.getElementById(checked_id) as HTMLInputElement;
@@ -190,12 +190,12 @@ function toggleISD(checked_id: string) {
     applyWhitelist(id, isdToggle.checked);
 }
 
-async function toggleAll(checked_id: string) {
-    const isdToggle = document.getElementById(checked_id) as HTMLInputElement;
-    isdToggle.checked = !isdToggle.checked;
-    console.log(isdToggle.checked)
-    await saveSyncValue(ISD_ALL, isdToggle.checked);
-}
+// async function toggleAll(checked_id: string) {
+//     const isdToggle = document.getElementById(checked_id) as HTMLInputElement;
+//     isdToggle.checked = !isdToggle.checked;
+//     console.log(isdToggle.checked)
+//     await saveSyncValue(ISD_ALL, isdToggle.checked);
+// }
 
 async function applyWhitelist(isd: string, checked: boolean) {
     const isdList = await getSyncValue(ISD_WHITELIST, []);
