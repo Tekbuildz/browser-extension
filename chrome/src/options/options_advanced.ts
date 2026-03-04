@@ -1,0 +1,101 @@
+import {
+    DEFAULT_PROXY_HOST,
+    HTTPS_PROXY_PORT,
+    HTTPS_PROXY_SCHEME,
+    loadProxySettingsNoUpdate,
+    type OnMessageMessageType,
+    proxyHost,
+    proxyPort,
+    proxyScheme
+} from "../background_helpers/proxy_handler.js";
+import {AUTO_PROXY_CONFIG, getSyncValue, PROXY_HOST, PROXY_PORT, PROXY_SCHEME, saveSyncValues} from "../shared/storage.js";
+
+// Default proxy configuration values
+const DEFAULT_PROXY_SCHEME = HTTPS_PROXY_SCHEME;
+const DEFAULT_PROXY_PORT = HTTPS_PROXY_PORT;
+
+const proxyAutoConfigurationCheckbox = document.getElementById("proxy-auto-configuration-checkbox") as HTMLInputElement;
+const proxySchemeSelect = document.getElementById("proxy-scheme-select") as HTMLSelectElement;
+const proxyHostInput = document.getElementById("proxy-host-input") as HTMLInputElement;
+const proxyPortInput = document.getElementById("proxy-port-input") as HTMLInputElement;
+const proxySaveSettingsButton = document.getElementById("proxy-save-settings-button") as HTMLButtonElement;
+const proxyResetDefaultButton = document.getElementById("proxy-reset-default-button") as HTMLButtonElement;
+
+// section-specific initialization
+document.addEventListener('DOMContentLoaded', async () => {
+    await loadProxySettingsNoUpdate();
+    proxySchemeSelect.value = proxyScheme;
+    proxyHostInput.value = proxyHost;
+    proxyPortInput.value = proxyPort;
+
+    const autoProxyConfig = await getSyncValue(AUTO_PROXY_CONFIG, true);
+    proxyAutoConfigurationCheckbox.checked = autoProxyConfig;
+    updateManualProxyConfigurationForm(autoProxyConfig);
+
+    // event handler registrations
+    proxyAutoConfigurationCheckbox.addEventListener("click", proxyAutoConfigurationCheckboxOnClick);
+    proxySaveSettingsButton.addEventListener("click", proxySaveSettingsButtonOnClick);
+    proxyResetDefaultButton.addEventListener("click", proxyResetDefaultButtonOnClick);
+});
+
+/**
+ * Event handler function that is invoked when the value for proxy autoconfiguration is toggled.
+ * Saves the new value and updates the manual configuration form via {@link updateManualProxyConfigurationForm}.
+ */
+function proxyAutoConfigurationCheckboxOnClick() {
+    const isChecked = proxyAutoConfigurationCheckbox.checked;
+    updateManualProxyConfigurationForm(isChecked);
+}
+
+async function proxySaveSettingsButtonOnClick() {
+    const scheme = proxySchemeSelect.value;
+    const host = proxyHostInput.value;
+    const port = proxyPortInput.value;
+
+    // basic validation
+    if (!host || !port) {
+        alert('Proxy host and port are required');
+        return;
+    }
+
+    await saveSyncValues({
+        [PROXY_SCHEME]: scheme,
+        [PROXY_HOST]: host,
+        [PROXY_PORT]: port,
+    });
+
+    // TODO: verify that this aligns with accessibility requirements, otherwise consider e.g. an alert-message (surely that one is at least AA-level?)
+    // display confirmation message
+    const originalText = proxySaveSettingsButton.textContent;
+    proxySaveSettingsButton.textContent = "Settings Saved!";
+    proxySaveSettingsButton.disabled = true;
+    setTimeout(() => {
+        proxySaveSettingsButton.textContent = originalText;
+        proxySaveSettingsButton.disabled = false;
+    }, 1500);
+}
+
+/**
+ * Event handler function that resets the values in the manual configuration form to their defaults.
+ */
+function proxyResetDefaultButtonOnClick() {
+    proxySchemeSelect.value = DEFAULT_PROXY_SCHEME;
+    proxyHostInput.value = DEFAULT_PROXY_HOST;
+    proxyPortInput.value = DEFAULT_PROXY_PORT;
+}
+
+/**
+ * Updates all form fields conditioned on the provided {@link autoProxyConfigEnabled}.
+ */
+function updateManualProxyConfigurationForm(autoProxyConfigEnabled: boolean) {
+    proxySchemeSelect.disabled = autoProxyConfigEnabled;
+    proxyHostInput.disabled = autoProxyConfigEnabled;
+    proxyPortInput.disabled = autoProxyConfigEnabled;
+    proxySaveSettingsButton.disabled = autoProxyConfigEnabled;
+    proxyResetDefaultButton.disabled = autoProxyConfigEnabled;
+
+    if (autoProxyConfigEnabled) {
+        const message = {action: "fetchAndApplyScionPAC"} as OnMessageMessageType;
+        chrome.runtime.sendMessage(message);
+    }
+}

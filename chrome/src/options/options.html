@@ -187,8 +187,8 @@
                         <div id="auto-configuration-container" class="card bg-secondary">
                             <div class="card-body p-5">
                                 <div class="flex flex-row justify-between items-center">
-                                    <label for="auto-configuration" class="font-semibold">Auto Configuration</label>
-                                    <input type="checkbox" id="auto-configuration" class="toggle toggle-success"/>
+                                    <label for="proxy-auto-configuration-checkbox" class="font-semibold">Auto Configuration</label>
+                                    <input type="checkbox" id="proxy-auto-configuration-checkbox" class="toggle toggle-success"/>
                                 </div>
                                 <div class="font-body">
                                     Use WPAD and defaults to automatically detect proxy settings.
@@ -200,21 +200,21 @@
                         <div id="manual-configuration-container" class="card bg-secondary mt-3">
                             <div class="card-body p-5">
                                 <h4 class="font-semibold">Manual Configuration</h4>
-                                <label for="proxy-scheme" class="font-body font-semibold">Protocol</label>
-                                <select id="proxy-scheme" class="select select-bordered">
+                                <label for="proxy-scheme-select" class="font-body font-semibold">Protocol</label>
+                                <select id="proxy-scheme-select" class="select select-bordered">
                                     <option selected>HTTPS</option>
                                     <option>HTTP</option>
                                 </select>
 
-                                <label for="proxy-host" class="font-body font-semibold">Proxy Host</label>
-                                <input type="text" id="proxy-host" placeholder="e.g. example.com" class="input input-bordered w-full"/>
+                                <label for="proxy-host-input" class="font-body font-semibold">Proxy Host</label>
+                                <input type="text" id="proxy-host-input" placeholder="e.g. example.com" class="input input-bordered w-full"/>
 
-                                <label for="proxy-port" class="font-body font-semibold">Proxy Port</label>
-                                <input type="number" id="proxy-port" placeholder="e.g. 10000" class="input input-bordered w-full"/>
+                                <label for="proxy-port-input" class="font-body font-semibold">Proxy Port</label>
+                                <input type="number" id="proxy-port-input" placeholder="e.g. 10000" class="input input-bordered w-full"/>
 
                                 <div class="flex flex-row justify-between mt-3">
-                                    <button class="btn btn-active">Save Proxy Settings</button>
-                                    <button class="btn btn-warning" style="--tw-bg-opacity: 0.3">Reset to Default</button>
+                                    <button id="proxy-save-settings-button" class="btn btn-active">Save Proxy Settings</button>
+                                    <button id="proxy-reset-default-button" class="btn btn-warning" style="--tw-bg-opacity: 0.3">Reset to Default</button>
                                 </div>
                             </div>
                         </div>

@@ -30,8 +30,8 @@ import {
 import {GlobalStrictMode, initializeStrictModes, removeEmptyEntries, toSet} from "../shared/utilities.js";
 
 // Default proxy configuration values
-const DEFAULT_PROXY_SCHEME = HTTPS_PROXY_SCHEME;
-const DEFAULT_PROXY_PORT = HTTPS_PROXY_PORT;
+// const DEFAULT_PROXY_SCHEME = HTTPS_PROXY_SCHEME;
+// const DEFAULT_PROXY_PORT = HTTPS_PROXY_PORT;
 
 // const toggleGlobalStrict = document.getElementById('toggleGlobalStrict') as HTMLInputElement;
 // const checkboxGlobalStrict = document.getElementById('checkboxGlobalStrict') as HTMLDivElement;
@@ -42,9 +42,9 @@ const DEFAULT_PROXY_PORT = HTTPS_PROXY_PORT;
 // const lineNewDomainStrictMode = document.getElementById('lineNewDomainStrictMode') as HTMLDivElement;
 // const inputNewDomain = document.getElementById('inputNewDomain') as HTMLInputElement;
 // const scionMode = document.getElementById('scionmode') as HTMLSpanElement;
-const proxySchemeElement = document.getElementById('proxy-scheme') as HTMLSelectElement;
-const proxyHostElement = document.getElementById('proxy-host') as HTMLInputElement;
-const proxyPortElement = document.getElementById('proxy-port') as HTMLInputElement;
+// const proxySchemeElement = document.getElementById('proxy-scheme') as HTMLSelectElement;
+// const proxyHostElement = document.getElementById('proxy-host') as HTMLInputElement;
+// const proxyPortElement = document.getElementById('proxy-port') as HTMLInputElement;
 
 // const addHostnameButton = document.getElementById("buttonAddHostname") as HTMLButtonElement;
 
@@ -87,22 +87,22 @@ document.addEventListener("DOMContentLoaded", async () => {
     registerToggleAllHandler();
 
     // Load saved settings
-    await loadProxySettingsNoUpdate();
-    proxySchemeElement.value = proxyScheme;
-    proxyHostElement.value = proxyHost;
-    proxyPortElement.value = proxyPort;
+    // await loadProxySettingsNoUpdate();
+    // proxySchemeElement.value = proxyScheme;
+    // proxyHostElement.value = proxyHost;
+    // proxyPortElement.value = proxyPort;
 
-    const saveProxySettingsButton = document.getElementById('save-proxy-settings') as HTMLButtonElement;
-    const resetProxyDefaultsButton = document.getElementById('reset-proxy-defaults') as HTMLButtonElement;
-    const autoProxyConfigInput = document.getElementById('auto-proxy-config') as HTMLInputElement;
+    // const saveProxySettingsButton = document.getElementById('save-proxy-settings') as HTMLButtonElement;
+    // const resetProxyDefaultsButton = document.getElementById('reset-proxy-defaults') as HTMLButtonElement;
+    // const autoProxyConfigInput = document.getElementById('auto-proxy-config') as HTMLInputElement;
 
-    const autoProxyConfig = await getSyncValue(AUTO_PROXY_CONFIG, true);
-    autoProxyConfigInput.checked = autoProxyConfig;
-    updateProxyFormState(autoProxyConfig);
+    // const autoProxyConfig = await getSyncValue(AUTO_PROXY_CONFIG, true);
+    // autoProxyConfigInput.checked = autoProxyConfig;
+    // updateProxyFormState(autoProxyConfig);
 
-    saveProxySettingsButton.addEventListener('click', saveProxySettings);
-    resetProxyDefaultsButton.addEventListener('click', resetProxyDefaults);
-    autoProxyConfigInput.addEventListener('change', saveAutoProxyConfig);
+    // saveProxySettingsButton.addEventListener('click', saveProxySettings);
+    // resetProxyDefaultsButton.addEventListener('click', resetProxyDefaults);
+    // autoProxyConfigInput.addEventListener('change', saveAutoProxyConfig);
 });
 
 /* Optional Javascript to close the radio button version by clicking it again */
@@ -197,6 +197,21 @@ async function toggleAll(checked_id: string) {
     await saveSyncValue(ISD_ALL, isdToggle.checked);
 }
 
+async function applyWhitelist(isd: string, checked: boolean) {
+    const isdList = await getSyncValue(ISD_WHITELIST, []);
+    const isdSet = await toSet(removeEmptyEntries(isdList));
+    if (checked) {
+        isdSet.add(isd);
+        console.log('Added isd to list: ' + isd);
+    } else {
+        isdSet.delete(isd);
+        console.log('Delete isd to list: ' + isd);
+    }
+    const isdSet_1 = isdSet;
+    await saveSyncValue(ISD_WHITELIST, [...isdSet_1]);
+    console.log([...isdSet_1]);
+}
+
 // function toggleGlobalStrictMode() {
 //     toggleGlobalStrict.checked = !toggleGlobalStrict.checked;
 //     if (toggleGlobalStrict.checked) {
@@ -246,78 +261,63 @@ async function toggleAll(checked_id: string) {
 //     });
 // }
 
-function updateProxyFormState(isAutoConfig: boolean) {
-    const manualControls = document.querySelectorAll(
-        '#manual-proxy-settings input, #manual-proxy-settings select, #manual-proxy-settings button, #reset-proxy-defaults'
-    ) as NodeListOf<HTMLInputElement | HTMLSelectElement | HTMLButtonElement>;
+// function updateProxyFormState(isAutoConfig: boolean) {
+//     const manualControls = document.querySelectorAll(
+//         '#manual-proxy-settings input, #manual-proxy-settings select, #manual-proxy-settings button, #reset-proxy-defaults'
+//     ) as NodeListOf<HTMLInputElement | HTMLSelectElement | HTMLButtonElement>;
+//
+//     manualControls.forEach(element => {
+//         element.disabled = isAutoConfig;
+//         if (isAutoConfig) {
+//             element.classList.add('opacity-50', 'cursor-not-allowed');
+//         } else {
+//             element.classList.remove('opacity-50', 'cursor-not-allowed');
+//         }
+//     });
+//
+//     if (isAutoConfig) {
+//         const message = { action: "fetchAndApplyScionPAC"} as OnMessageMessageType;
+//         chrome.runtime.sendMessage(message);
+//     }
+// }
 
-    manualControls.forEach(element => {
-        element.disabled = isAutoConfig;
-        if (isAutoConfig) {
-            element.classList.add('opacity-50', 'cursor-not-allowed');
-        } else {
-            element.classList.remove('opacity-50', 'cursor-not-allowed');
-        }
-    });
+// function saveProxySettings() {
+//     const scheme = proxySchemeElement.value;
+//     const host = proxyHostElement.value;
+//     const port = proxyPortElement.value;
+//
+//     // Basic validation
+//     if (!host || !port) {
+//         alert('Proxy host and port are required');
+//         return;
+//     }
+//
+//     saveSyncValues({
+//         [PROXY_SCHEME]: scheme,
+//         [PROXY_HOST]: host,
+//         [PROXY_PORT]: port,
+//     }).then(() => {
+//         // Show saved message
+//         const saveButton = document.getElementById('save-proxy-settings') as HTMLButtonElement;
+//         const originalText = saveButton.textContent;
+//         saveButton.textContent = 'Settings Saved!';
+//         saveButton.disabled = true;
+//
+//         setTimeout(function() {
+//             saveButton.textContent = originalText;
+//             saveButton.disabled = false;
+//         }, 1500);
+//     });
+// }
+// function resetProxyDefaults() {
+//     proxySchemeElement.value = DEFAULT_PROXY_SCHEME;
+//     proxyHostElement.value = DEFAULT_PROXY_HOST;
+//     proxyPortElement.value = DEFAULT_PROXY_PORT;
+// }
 
-    if (isAutoConfig) {
-        const message = { action: "fetchAndApplyScionPAC"} as OnMessageMessageType;
-        chrome.runtime.sendMessage(message);
-    }
-}
-
-function saveProxySettings() {
-    const scheme = proxySchemeElement.value;
-    const host = proxyHostElement.value;
-    const port = proxyPortElement.value;
-
-    // Basic validation
-    if (!host || !port) {
-        alert('Proxy host and port are required');
-        return;
-    }
-
-    saveSyncValues({
-        [PROXY_SCHEME]: scheme,
-        [PROXY_HOST]: host,
-        [PROXY_PORT]: port,
-    }).then(() => {
-        // Show saved message
-        const saveButton = document.getElementById('save-proxy-settings') as HTMLButtonElement;
-        const originalText = saveButton.textContent;
-        saveButton.textContent = 'Settings Saved!';
-        saveButton.disabled = true;
-
-        setTimeout(function() {
-            saveButton.textContent = originalText;
-            saveButton.disabled = false;
-        }, 1500);
-    });
-}
-function resetProxyDefaults() {
-    proxySchemeElement.value = DEFAULT_PROXY_SCHEME;
-    proxyHostElement.value = DEFAULT_PROXY_HOST;
-    proxyPortElement.value = DEFAULT_PROXY_PORT;
-}
-
-function saveAutoProxyConfig() {
-    const autoProxyConfigInput = document.getElementById('auto-proxy-config') as HTMLInputElement;
-    const autoConfig = autoProxyConfigInput.checked;
-
-    saveSyncValue(AUTO_PROXY_CONFIG, autoConfig).then(() => updateProxyFormState(autoConfig));
-}
-
-async function applyWhitelist(isd: string, checked: boolean) {
-    const isdList = await getSyncValue(ISD_WHITELIST, []);
-    const isdSet = await toSet(removeEmptyEntries(isdList));
-    if (checked) {
-        isdSet.add(isd);
-        console.log('Added isd to list: ' + isd);
-    } else {
-        isdSet.delete(isd);
-        console.log('Delete isd to list: ' + isd);
-    }
-    const isdSet_1 = isdSet;
-    await saveSyncValue(ISD_WHITELIST, [...isdSet_1]);
-    console.log([...isdSet_1]);
-}
+// function saveAutoProxyConfig() {
+//     const autoProxyConfigInput = document.getElementById('auto-proxy-config') as HTMLInputElement;
+//     const autoConfig = autoProxyConfigInput.checked;
+//
+//     saveSyncValue(AUTO_PROXY_CONFIG, autoConfig).then(() => updateProxyFormState(autoConfig));
+// }
