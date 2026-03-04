@@ -36,34 +36,34 @@ const DEFAULT_PROXY_PORT = HTTPS_PROXY_PORT;
 // const toggleGlobalStrict = document.getElementById('toggleGlobalStrict') as HTMLInputElement;
 // const checkboxGlobalStrict = document.getElementById('checkboxGlobalStrict') as HTMLDivElement;
 // const lineStrictMode = document.getElementById('lineStrictMode') as HTMLDivElement;
-const tableSitePreferences = document.getElementById('tableBodySitePreferences')!;
-const checkBoxNewDomainStrictMode = document.getElementById('checkBoxNewDomainStrictMode') as HTMLDivElement;
-const toggleNewDomainStrictMode = document.getElementById('toggleNewDomainStrictMode') as HTMLInputElement;
-const lineNewDomainStrictMode = document.getElementById('lineNewDomainStrictMode') as HTMLDivElement;
-const inputNewDomain = document.getElementById('inputNewDomain') as HTMLInputElement;
-const scionMode = document.getElementById('scionmode') as HTMLSpanElement;
+// const tableSitePreferences = document.getElementById('tableBodySitePreferences')!;
+// const checkBoxNewDomainStrictMode = document.getElementById('checkBoxNewDomainStrictMode') as HTMLDivElement;
+// const toggleNewDomainStrictMode = document.getElementById('toggleNewDomainStrictMode') as HTMLInputElement;
+// const lineNewDomainStrictMode = document.getElementById('lineNewDomainStrictMode') as HTMLDivElement;
+// const inputNewDomain = document.getElementById('inputNewDomain') as HTMLInputElement;
+// const scionMode = document.getElementById('scionmode') as HTMLSpanElement;
 const proxySchemeElement = document.getElementById('proxy-scheme') as HTMLSelectElement;
 const proxyHostElement = document.getElementById('proxy-host') as HTMLInputElement;
 const proxyPortElement = document.getElementById('proxy-port') as HTMLInputElement;
 
-const addHostnameButton = document.getElementById("buttonAddHostname") as HTMLButtonElement;
+// const addHostnameButton = document.getElementById("buttonAddHostname") as HTMLButtonElement;
 
-const tableSitePreferencesRow = ` 
-<tr>
-<td class="p-2 whitespace-nowrap">
-  <div class="text-left">{site}</div>
-</td>
-<td class="p-2 whitespace-nowrap flex">
-  <div class="text-left font-medium mr-3">
-    <div class="relative cursor-pointer" id="checkBoxSite-{site}">
-      <input id="toggleSite-{site}" {checked} type="checkbox" class="site-pref-entry sr-only" />
-      <div class="w-8 h-4 bg-gray-400 rounded-full shadow-inner" style="background-color: {backgroundColor};"></div>
-      <div class="dot2 absolute w-4 h-4 bg-white rounded-full shadow -left-1 -top-0 transition"></div>
-    </div>
-  </div>
-  <span style="font-size: 12px">{mode}</span>
-</td>
-</tr>`
+// const tableSitePreferencesRow = `
+// <tr>
+// <td class="p-2 whitespace-nowrap">
+//   <div class="text-left">{site}</div>
+// </td>
+// <td class="p-2 whitespace-nowrap flex">
+//   <div class="text-left font-medium mr-3">
+//     <div class="relative cursor-pointer" id="checkBoxSite-{site}">
+//       <input id="toggleSite-{site}" {checked} type="checkbox" class="site-pref-entry sr-only" />
+//       <div class="w-8 h-4 bg-gray-400 rounded-full shadow-inner" style="background-color: {backgroundColor};"></div>
+//       <div class="dot2 absolute w-4 h-4 bg-white rounded-full shadow -left-1 -top-0 transition"></div>
+//     </div>
+//   </div>
+//   <span style="font-size: 12px">{mode}</span>
+// </td>
+// </tr>`
 
 const placeholderToggleID = "toggleISD-";
 
@@ -121,36 +121,36 @@ for (x = 0; x < myRadios.length; x++) {
     };
 }
 
-updateSitePreferences();
+// updateSitePreferences();
 
 // checkboxGlobalStrict.addEventListener('click', toggleGlobalStrictMode);
 
-addHostnameButton.addEventListener('click', function () {
-    const newDomainInput = document.getElementById('inputNewDomain') as HTMLInputElement;
-    const domain = newDomainInput.value;
-    const strictMode = toggleNewDomainStrictMode.checked;
-    getSyncValue(PER_SITE_STRICT_MODE, {}).then(perSiteStrictMode => {
-        perSiteStrictMode[domain] = strictMode;
-        saveSyncValue(PER_SITE_STRICT_MODE, perSiteStrictMode).then(() => {
-            updateSitePreferences();
-            toggleNewDomainStrictMode.checked = false;
-            inputNewDomain.value = '';
-            lineNewDomainStrictMode.style.backgroundColor = '';
-            scionMode.innerHTML = 'when available';
-        });
-    });
-});
+// addHostnameButton.addEventListener('click', function () {
+//     const newDomainInput = document.getElementById('inputNewDomain') as HTMLInputElement;
+//     const domain = newDomainInput.value;
+//     const strictMode = toggleNewDomainStrictMode.checked;
+//     getSyncValue(PER_SITE_STRICT_MODE, {}).then(perSiteStrictMode => {
+//         perSiteStrictMode[domain] = strictMode;
+//         saveSyncValue(PER_SITE_STRICT_MODE, perSiteStrictMode).then(() => {
+//             updateSitePreferences();
+//             toggleNewDomainStrictMode.checked = false;
+//             inputNewDomain.value = '';
+//             lineNewDomainStrictMode.style.backgroundColor = '';
+//             scionMode.innerHTML = 'when available';
+//         });
+//     });
+// });
 
-checkBoxNewDomainStrictMode.addEventListener('click', function () {
-    toggleNewDomainStrictMode.checked = !toggleNewDomainStrictMode.checked;
-    if (toggleNewDomainStrictMode.checked) {
-        lineNewDomainStrictMode.style.backgroundColor = '#48bb78';
-        scionMode.innerHTML = 'strict';
-    } else {
-        lineNewDomainStrictMode.style.backgroundColor = '';
-        scionMode.innerHTML = 'when available';
-    }
-});
+// checkBoxNewDomainStrictMode.addEventListener('click', function () {
+//     toggleNewDomainStrictMode.checked = !toggleNewDomainStrictMode.checked;
+//     if (toggleNewDomainStrictMode.checked) {
+//         lineNewDomainStrictMode.style.backgroundColor = '#48bb78';
+//         scionMode.innerHTML = 'strict';
+//     } else {
+//         lineNewDomainStrictMode.style.backgroundColor = '';
+//         scionMode.innerHTML = 'when available';
+//     }
+// });
 
 function displayToggleISD(isdSet: string[]) {
     if (!isdSet) {
@@ -208,43 +208,43 @@ async function toggleAll(checked_id: string) {
 //     saveSyncValue(GLOBAL_STRICT_MODE, toggleGlobalStrict.checked);
 // }
 
-function updateSitePreferences() {
-    getSyncValue(PER_SITE_STRICT_MODE, {}).then(perSiteStrictMode => {
-        tableSitePreferences.innerHTML = '';
-        Object.keys(perSiteStrictMode || {}).forEach(k => {
-            let row = tableSitePreferencesRow.replaceAll("{site}", k);
-            row = row.replaceAll("{checked}", perSiteStrictMode[k] ? "checked=true" : "");
-            row = row.replaceAll("{mode}", perSiteStrictMode[k] ? 'strict' : 'when available');
-            row = row.replaceAll("{backgroundColor}", perSiteStrictMode[k] ? '#48bb78' : '');
-            tableSitePreferences.innerHTML += row;
-        });
-        registerToggleSitePreferenceHandler();
-    });
-}
+// function updateSitePreferences() {
+//     getSyncValue(PER_SITE_STRICT_MODE, {}).then(perSiteStrictMode => {
+//         tableSitePreferences.innerHTML = '';
+//         Object.keys(perSiteStrictMode || {}).forEach(k => {
+//             let row = tableSitePreferencesRow.replaceAll("{site}", k);
+//             row = row.replaceAll("{checked}", perSiteStrictMode[k] ? "checked=true" : "");
+//             row = row.replaceAll("{mode}", perSiteStrictMode[k] ? 'strict' : 'when available');
+//             row = row.replaceAll("{backgroundColor}", perSiteStrictMode[k] ? '#48bb78' : '');
+//             tableSitePreferences.innerHTML += row;
+//         });
+//         registerToggleSitePreferenceHandler();
+//     });
+// }
 
 
-function registerToggleSitePreferenceHandler() {
-    const toggles = document.getElementsByClassName("site-pref-entry");
-    for (let i = 0; i < toggles.length; i++) {
-        const toggle = toggles[i]!;
-        const parentDiv = toggle.parentElement!;
-        parentDiv.onclick = () => {
-            toggleSitePreference(toggles[i].id);
-        }
-    }
-}
+// function registerToggleSitePreferenceHandler() {
+//     const toggles = document.getElementsByClassName("site-pref-entry");
+//     for (let i = 0; i < toggles.length; i++) {
+//         const toggle = toggles[i]!;
+//         const parentDiv = toggle.parentElement!;
+//         parentDiv.onclick = () => {
+//             toggleSitePreference(toggles[i].id);
+//         }
+//     }
+// }
 
-function toggleSitePreference(checked_id: string) {
-    const isdToggle = document.getElementById(checked_id) as HTMLInputElement;
-    isdToggle.checked = !isdToggle.checked;
-    const domain = checked_id.split("toggleSite-")[1]!;
-    getSyncValue(PER_SITE_STRICT_MODE, {}).then(perSiteStrictMode => {
-        perSiteStrictMode[domain] = isdToggle.checked;
-        saveSyncValue(PER_SITE_STRICT_MODE, perSiteStrictMode).then(() => {
-            updateSitePreferences();
-        });
-    });
-}
+// function toggleSitePreference(checked_id: string) {
+//     const isdToggle = document.getElementById(checked_id) as HTMLInputElement;
+//     isdToggle.checked = !isdToggle.checked;
+//     const domain = checked_id.split("toggleSite-")[1]!;
+//     getSyncValue(PER_SITE_STRICT_MODE, {}).then(perSiteStrictMode => {
+//         perSiteStrictMode[domain] = isdToggle.checked;
+//         saveSyncValue(PER_SITE_STRICT_MODE, perSiteStrictMode).then(() => {
+//             updateSitePreferences();
+//         });
+//     });
+// }
 
 function updateProxyFormState(isAutoConfig: boolean) {
     const manualControls = document.querySelectorAll(
