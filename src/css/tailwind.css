@@ -2,34 +2,93 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ===== BASE STYLES ===== */
 body {
-  background: rgb(248, 247, 250);
-  background: linear-gradient(
-    90deg, 
-    rgba(248, 247, 250, 1) 0%, 
-    rgba(230, 230, 238, 1) 35%, 
-    rgba(228, 240, 242, 1) 100%
-  );
+    /* background gradient */
+    background: rgb(248, 247, 250);
+    background: linear-gradient(
+            90deg,
+            rgba(248, 247, 250, 1) 0%,
+            rgba(230, 230, 238, 1) 35%,
+            rgba(228, 240, 242, 1) 100%
+    );
+
+    /* custom colors */
+    --new-widget-bg: rgb(209 213 219);
+    --new-widget-bg-secondary: rgb(229 231 235);
+    --table-zebra-new-row-bg: rgb(209 213 219 / 0.25);
 }
 
 h3 {
-  min-width: 300px;
-  text-align: center;
+    min-width: 300px;
+    text-align: center;
 }
 
-#popup-tab-list {
-    --new-tab-bg: rgb(209 213 219 / var(--tw-bg-opacity, 1));
-}
-
+/* ===== POPUP ===== */
 #popup-tab-list > .tab:is(input:checked) {
-    background-color: var(--new-tab-bg) !important;
+    background-color: var(--new-widget-bg) !important;
 }
 
 #popup-tab-list > .tab:is(input:checked):before {
-    --tab-bg: var(--new-tab-bg) !important;
+    --tab-bg: var(--new-widget-bg) !important;
 }
 
 #popup-tab-list > .tab {
     --tab-border-color: #000000 !important;
+}
+
+/* ===== OPTIONS ===== */
+#options-tab-list > .tab:is(input:checked) {
+    background-color: var(--new-widget-bg) !important;
+}
+
+#options-tab-list > .tab:is(input:checked):before {
+    --tab-bg: var(--new-widget-bg) !important;
+}
+
+#options-tab-list > .tab {
+    --tab-border-color: #000000 !important;
+}
+
+.font-body {
+    font-size: 12px;
+}
+
+.bg-default {
+    background-color: var(--new-widget-bg);
+}
+
+.bg-secondary {
+    background-color: var(--new-widget-bg-secondary);
+}
+
+.table-custom-zebra tbody tr:nth-child(2n) td:first-child {
+    background-color: var(--table-zebra-new-row-bg);
+    border-start-start-radius: var(--rounded-box, 1rem);
+    border-end-start-radius: var(--rounded-box, 1rem);
+}
+
+.table-custom-zebra tbody tr:nth-child(2n) td:last-child {
+    background-color: var(--table-zebra-new-row-bg);
+    border-start-end-radius: var(--rounded-box, 1rem);
+    border-end-end-radius: var(--rounded-box, 1rem);
+}
+
+.table-custom-zebra tbody tr:nth-child(2n) td:not(:first-child):not(:last-child) {
+    background-color: var(--table-zebra-new-row-bg);
+}
+
+.label-strict {
+    display: none;
+}
+
+.strict-mode-toggle:checked ~ .label-available {
+    display: none;
+}
+
+.strict-mode-toggle:checked ~ .label-strict {
+    display: block;
+}
+
+.strict-mode-toggle ~ label {
+    min-width: 90px;
 }
