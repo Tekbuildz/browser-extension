@@ -9,13 +9,13 @@
     <div class="w-full mx-auto p-2" style="width: 600px; min-height: 600px">
         <div role="tablist" class="tabs tabs-lifted" id="options-tab-list">
             <!-- General -->
-            <input type="radio" name="main_tabs" role="tab" class="tab" aria-label="General"/>
+            <input type="radio" name="main_tabs" role="tab" class="tab" aria-label="General" checked/>
             <div role="tabpanel" class="tab-content bg-transparent border-black rounded-box p-5">
                 <div class="card bg-default">
                     <div class="card-body p-5">
                         <div class="title-row flex flex-row justify-between">
-                            <h2 class="card-title">Global Strict Mode</h2>
-                            <input type="checkbox" class="toggle toggle-success"/>
+                            <label for="global-strict-mode-checkbox" class="card-title">Global Strict Mode</label>
+                            <input id="global-strict-mode-checkbox" type="checkbox" class="toggle toggle-success"/>
                         </div>
                         <div class="font-body">
                             Use SCION exclusively. Many sites will fail or only load partially.
@@ -176,7 +176,7 @@
             </div>
 
             <!-- Advanced -->
-            <input type="radio" name="main_tabs" role="tab" class="tab" aria-label="Advanced" checked/>
+            <input type="radio" name="main_tabs" role="tab" class="tab" aria-label="Advanced"/>
             <div role="tabpanel" class="tab-content bg-transparent border-black rounded-box p-5">
                 <!-- Proxy Configuration-->
                 <div class="card bg-default">
@@ -224,6 +224,10 @@
     </div>
 </body>
 <script type="module" src="../shared/storage.js"></script>
-<script type="module" src="options.js"></script>
+<script type="module" src="options_initializer.js"></script>
+<script type="module" src="options_general.js"></script>
+<script type="module" src="options_site_preferences.js"></script>
+<script type="module" src="options_geofencing.js"></script>
+<script type="module" src="options_advanced.js"></script>
 
 </html>

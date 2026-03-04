@@ -33,9 +33,9 @@ import {GlobalStrictMode, initializeStrictModes, removeEmptyEntries, toSet} from
 const DEFAULT_PROXY_SCHEME = HTTPS_PROXY_SCHEME;
 const DEFAULT_PROXY_PORT = HTTPS_PROXY_PORT;
 
-const toggleGlobalStrict = document.getElementById('toggleGlobalStrict') as HTMLInputElement;
-const checkboxGlobalStrict = document.getElementById('checkboxGlobalStrict') as HTMLDivElement;
-const lineStrictMode = document.getElementById('lineStrictMode') as HTMLDivElement;
+// const toggleGlobalStrict = document.getElementById('toggleGlobalStrict') as HTMLInputElement;
+// const checkboxGlobalStrict = document.getElementById('checkboxGlobalStrict') as HTMLDivElement;
+// const lineStrictMode = document.getElementById('lineStrictMode') as HTMLDivElement;
 const tableSitePreferences = document.getElementById('tableBodySitePreferences')!;
 const checkBoxNewDomainStrictMode = document.getElementById('checkBoxNewDomainStrictMode') as HTMLDivElement;
 const toggleNewDomainStrictMode = document.getElementById('toggleNewDomainStrictMode') as HTMLInputElement;
@@ -70,12 +70,12 @@ const placeholderToggleID = "toggleISD-";
 document.addEventListener("DOMContentLoaded", async () => {
     await initializeStrictModes();
 
-    toggleGlobalStrict.checked = GlobalStrictMode;
-    if (toggleGlobalStrict.checked) {
-        lineStrictMode.style.backgroundColor = '#48bb78';
-    } else {
-        lineStrictMode.style.backgroundColor = '#cccccc';
-    }
+    // toggleGlobalStrict.checked = GlobalStrictMode;
+    // if (toggleGlobalStrict.checked) {
+    //     lineStrictMode.style.backgroundColor = '#48bb78';
+    // } else {
+    //     lineStrictMode.style.backgroundColor = '#cccccc';
+    // }
 
     const isdSet = await getSyncValue(ISD_WHITELIST, []);
     displayToggleISD(isdSet);
@@ -123,7 +123,7 @@ for (x = 0; x < myRadios.length; x++) {
 
 updateSitePreferences();
 
-checkboxGlobalStrict.addEventListener('click', toggleGlobalStrictMode);
+// checkboxGlobalStrict.addEventListener('click', toggleGlobalStrictMode);
 
 addHostnameButton.addEventListener('click', function () {
     const newDomainInput = document.getElementById('inputNewDomain') as HTMLInputElement;
@@ -197,16 +197,16 @@ async function toggleAll(checked_id: string) {
     await saveSyncValue(ISD_ALL, isdToggle.checked);
 }
 
-function toggleGlobalStrictMode() {
-    toggleGlobalStrict.checked = !toggleGlobalStrict.checked;
-    if (toggleGlobalStrict.checked) {
-        lineStrictMode.style.backgroundColor = '#48bb78';
-    } else {
-        lineStrictMode.style.backgroundColor = '#cccccc';
-    }
-
-    saveSyncValue(GLOBAL_STRICT_MODE, toggleGlobalStrict.checked);
-}
+// function toggleGlobalStrictMode() {
+//     toggleGlobalStrict.checked = !toggleGlobalStrict.checked;
+//     if (toggleGlobalStrict.checked) {
+//         lineStrictMode.style.backgroundColor = '#48bb78';
+//     } else {
+//         lineStrictMode.style.backgroundColor = '#cccccc';
+//     }
+//
+//     saveSyncValue(GLOBAL_STRICT_MODE, toggleGlobalStrict.checked);
+// }
 
 function updateSitePreferences() {
     getSyncValue(PER_SITE_STRICT_MODE, {}).then(perSiteStrictMode => {
