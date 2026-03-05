@@ -6,6 +6,7 @@ const allowAllTrafficCheckbox = document.getElementById("allow-traffic-checkbox"
 const scionLabTable = document.getElementById("scion-lab-table") as HTMLTableElement;
 const productionNetworkTable = document.getElementById("production-network-table") as HTMLTableElement;
 
+// lists of ISDs; they will be sorted before displaying in the UI
 const scionLabISDs: Record<string, string> = {
     "19": "EU",
     "17": "Switzerland",
@@ -23,6 +24,7 @@ const productionNetworkISDs: Record<string, string> = {
     "72": "HVR",
 };
 
+// section-specific initialization
 document.addEventListener('DOMContentLoaded', async () => {
     allowAllTrafficCheckbox.checked = await getSyncValue(ISD_ALL, true);
     allowAllTrafficCheckbox.addEventListener("click", allowAllTrafficCheckboxOnClick);
