@@ -9,12 +9,14 @@ const addSitePreferenceDomainInput = document.getElementById("add-site-preferenc
 const addSitePreferenceCheckbox = document.getElementById("add-site-preference-checkbox") as HTMLInputElement;
 const addSitePreferenceButton = document.getElementById("add-site-preference-button") as HTMLButtonElement;
 
-// section-specific initialization
-document.addEventListener('DOMContentLoaded', async () => {
+/**
+ * Initializes event handlers and UI setup.
+ */
+export async function initializeSitePreferences() {
     addSitePreferenceButton.addEventListener("click", addSitePreferenceButtonOnClick);
 
     await updateSitePreferencesTable();
-});
+}
 
 /**
  * Updates all values in the site-preferences table.
@@ -39,13 +41,17 @@ async function updateSitePreferencesTable() {
             </td>
         </tr>`
 
-        // registering the onclick-handler
-        const checkbox = document.getElementById(elementId);
-        if (checkbox === null) console.log("[updateSitePreferencesTable]: Failed to find element with index: ", siteIndex);
-        checkbox?.addEventListener("click", async () => await sitePreferenceCheckboxOnClick(siteIndex));
-
         siteIndex++;
     });
+
+    // registering the onclick-handlers
+    // Note: `siteIndex` now represents the number of table rows that were added
+    for (let i = 0; i < siteIndex; i++) {
+        const elementId = getSitePreferenceId(i);
+        const checkbox = document.getElementById(elementId) as HTMLInputElement | null;
+        if (checkbox === null) console.log("[updateSitePreferencesTable]: Failed to find element with index: ", i);
+        checkbox?.addEventListener("click", async () => await sitePreferenceCheckboxOnClick(i));
+    }
 }
 
 /**

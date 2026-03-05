@@ -24,15 +24,17 @@ const productionNetworkISDs: Record<string, string> = {
     "72": "HVR",
 };
 
-// section-specific initialization
-document.addEventListener('DOMContentLoaded', async () => {
+/**
+ * Initializes event handlers and UI setup.
+ */
+export async function initializeGeofencing() {
     allowAllTrafficCheckbox.checked = await getSyncValue(ISD_ALL, true);
     allowAllTrafficCheckbox.addEventListener("click", allowAllTrafficCheckboxOnClick);
 
     const isdWhitelist = await getSyncValue(ISD_WHITELIST, []);
     updateScionLabTable(isdWhitelist);
     updateProductionNetworkTable(isdWhitelist);
-});
+}
 
 /**
  * Populates the {@link scionLabTable}.

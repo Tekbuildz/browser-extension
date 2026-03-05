@@ -21,8 +21,10 @@ const proxyPortInput = document.getElementById("proxy-port-input") as HTMLInputE
 const proxySaveSettingsButton = document.getElementById("proxy-save-settings-button") as HTMLButtonElement;
 const proxyResetDefaultButton = document.getElementById("proxy-reset-default-button") as HTMLButtonElement;
 
-// section-specific initialization
-document.addEventListener('DOMContentLoaded', async () => {
+/**
+ * Initializes event handlers and UI setup.
+ */
+export async function initializeAdvanced() {
     await loadProxySettingsNoUpdate();
     proxySchemeSelect.value = proxyScheme;
     proxyHostInput.value = proxyHost;
@@ -36,7 +38,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     proxyAutoConfigurationCheckbox.addEventListener("click", proxyAutoConfigurationCheckboxOnClick);
     proxySaveSettingsButton.addEventListener("click", proxySaveSettingsButtonOnClick);
     proxyResetDefaultButton.addEventListener("click", proxyResetDefaultButtonOnClick);
-});
+}
 
 /**
  * Event handler function that is invoked when the value for proxy autoconfiguration is toggled.
