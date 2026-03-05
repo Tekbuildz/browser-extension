@@ -9,7 +9,7 @@ import {
     proxyPort,
     proxyScheme
 } from "../background_helpers/proxy_handler.js";
-import {AUTO_PROXY_CONFIG, getSyncValue, PROXY_HOST, PROXY_PORT, PROXY_SCHEME, saveSyncValues} from "../shared/storage.js";
+import {AUTO_PROXY_CONFIG, getSyncValue, PROXY_HOST, PROXY_PORT, PROXY_SCHEME, saveSyncValue, saveSyncValues} from "../shared/storage.js";
 
 // Default proxy configuration values
 const DEFAULT_PROXY_SCHEME = HTTPS_PROXY_SCHEME;
@@ -52,8 +52,9 @@ export async function initializeAdvanced() {
  * Event handler function that is invoked when the value for proxy autoconfiguration is toggled.
  * Saves the new value and updates the manual configuration form via {@link updateManualProxyConfigurationForm}.
  */
-function proxyAutoConfigurationCheckboxOnClick() {
+async function proxyAutoConfigurationCheckboxOnClick() {
     const isChecked = proxyAutoConfigurationCheckbox.checked;
+    await saveSyncValue(AUTO_PROXY_CONFIG, isChecked);
     updateManualProxyConfigurationForm(isChecked);
 }
 
