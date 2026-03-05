@@ -2,7 +2,7 @@
 import {getSyncValue, ISD_ALL, ISD_WHITELIST, saveSyncValue} from "../shared/storage.js";
 import {removeEmptyEntries, toSet} from "../shared/utilities.js";
 
-const allowAllTrafficCheckbox = document.getElementById("allow-traffic-checkbox") as HTMLInputElement;
+const allowAllTrafficCheckbox = document.getElementById("allow-all-traffic-checkbox") as HTMLInputElement;
 const scionLabTable = document.getElementById("scion-lab-table") as HTMLTableElement;
 const productionNetworkTable = document.getElementById("production-network-table") as HTMLTableElement;
 
