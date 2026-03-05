@@ -1,5 +1,6 @@
 import {
     DEFAULT_PROXY_HOST,
+    HTTP_PROXY_SCHEME,
     HTTPS_PROXY_PORT,
     HTTPS_PROXY_SCHEME,
     loadProxySettingsNoUpdate,
@@ -25,6 +26,13 @@ const proxyResetDefaultButton = document.getElementById("proxy-reset-default-but
  * Initializes event handlers and UI setup.
  */
 export async function initializeAdvanced() {
+    // generate the options for the proxy-scheme dropdown
+    const httpsOption = new Option(HTTPS_PROXY_SCHEME.toUpperCase(), HTTPS_PROXY_SCHEME);
+    const httpOption = new Option(HTTP_PROXY_SCHEME.toUpperCase(), HTTP_PROXY_SCHEME);
+    proxySchemeSelect.options.add(httpsOption);
+    proxySchemeSelect.options.add(httpOption);
+
+    // initializing the proxy-configuration values displayed in the UI
     await loadProxySettingsNoUpdate();
     proxySchemeSelect.value = proxyScheme;
     proxyHostInput.value = proxyHost;

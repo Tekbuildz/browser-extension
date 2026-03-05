@@ -57,7 +57,11 @@ function updateScionLabTable(isdWhitelist: string[]) {
                 </td>
             </tr>
         `;
+    }
 
+    // registering the onclick-handlers
+    for (const isdNumber of orderedScionLabISDNumbers) {
+        const elementId = getIsdElementId(isdNumber);
         const checkbox = document.getElementById(elementId);
         if (checkbox === null) console.log("[updateScionLabTable]: Failed to find element with isdNumber: ", isdNumber);
         checkbox?.addEventListener("click", async () => await isdCheckboxOnClick(isdNumber));
@@ -90,8 +94,15 @@ function updateProductionNetworkTable(isdWhitelist: string[]) {
         if (checkbox === null) console.log("[updateProductionNetworkTable]: Failed to find element with isdNumber: ", isdNumber);
         checkbox?.addEventListener("click", async () => await isdCheckboxOnClick(isdNumber));
     }
+
+    // registering the onclick-handlers
+    for (const isdNumber of orderedProductionNetworkISDNumbers) {
+        const elementId = getIsdElementId(isdNumber);
+        const checkbox = document.getElementById(elementId);
+        if (checkbox === null) console.log("[updateScionLabTable]: Failed to find element with isdNumber: ", isdNumber);
+        checkbox?.addEventListener("click", async () => await isdCheckboxOnClick(isdNumber));
+    }
 }
-// TODO: review code, then test whether the entire new UI works properly
 
 /**
  * Event handler function that is invoked when the whitelist preference of an ISD changes.
