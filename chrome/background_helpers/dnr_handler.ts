@@ -112,7 +112,7 @@ export async function perSiteStrictModeUpdated() {
                 // in the domainSpecificRules
                 const isScion = await isHostScion(strictHost, strictHost, chrome.tabs.TAB_ID_NONE);
                 const id = (await getNFreeIds(1))[0];
-                if (isScion) domainSpecificRules.push(createAllowRule(strictHost, id))
+                if (isScion) domainSpecificRules.push(createAllowRule(strictHost, id));
                 else domainSpecificRules.push(createBlockRule(strictHost, id));
             }
         }
