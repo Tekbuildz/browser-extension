@@ -97,7 +97,10 @@ export async function addOrUpdateRequestInDB(entry: RequestSchema): Promise<void
     await requestToPromise(addOrUpdateRequest);
 
     const count = await getEntryCount(store);
-    if (count + 1 > MAX_ENTRIES) {
+    // since MAX_ENTRIES already accounts for some buffer, concurrent changes to the DNR rules will
+    // with near certainty not exceed the DNR rule limit until rules are evicted, hence simply comparing
+    // count and not e.g. count+10 is sufficient
+    if (count > MAX_ENTRIES) {
         await evictLRU(store, EVICT_COUNT);
     }
 
