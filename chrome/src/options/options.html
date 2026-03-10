@@ -1,16 +1,18 @@
 <!DOCTYPE html>
-<html class="h-full">
+<html class="h-full" lang="en">
 
 <head>
     <link href="../../css/tailwind.min.css" rel="stylesheet">
+    <title>Options</title>
 </head>
 
 <body class="h-full min-h-fit">
     <div class="w-full mx-auto px-2 py-5" style="width: 600px;">
+        <h1 class="pb-4 font-semibold" style="font-size: x-large;">SCION Extension Options</h1>
         <div role="tablist" class="tabs tabs-lifted" id="options-tab-list">
             <!-- General -->
-            <input type="radio" name="main_tabs" role="tab" class="tab" aria-label="General" checked/>
-            <div role="tabpanel" class="tab-content bg-transparent border-black rounded-box p-5">
+            <input id="tab-general" type="radio" name="main_tabs" role="tab" class="tab" aria-label="General" checked/>
+            <div role="tabpanel" aria-labelledby="tab-general" class="tab-content bg-transparent border-black rounded-box p-5">
                 <div class="card bg-default">
                     <div class="card-body p-5">
                         <div class="title-row flex flex-row justify-between">
@@ -25,16 +27,18 @@
             </div>
 
             <!-- Site Preferences -->
-            <input type="radio" name="main_tabs" role="tab" class="tab" aria-label="Site Preferences"/>
-            <div role="tabpanel" class="tab-content bg-transparent border-black rounded-box p-5">
+            <input id="tab-site-preferences" type="radio" name="main_tabs" role="tab" class="tab" aria-label="Site Preferences"/>
+            <div role="tabpanel" aria-labelledby="tab-site-preferences" class="tab-content bg-transparent border-black rounded-box p-5">
                 <div class="font-body">Add a preference for a domain (including all requested cross-domain resources).</div>
 
                 <div class="flex flex-row justify-between items-center my-4">
-                    <input id="add-site-preference-domain-input" type="text" placeholder="Enter domain" class="input input-bordered"/>
+                    <input id="add-site-preference-domain-input" type="text" placeholder="Enter domain" class="input input-bordered" aria-label="Enter domain"/>
                     <div class="toggle-container flex flex-row items-center">
                         <input id="add-site-preference-checkbox" type="checkbox" class="strict-mode-toggle toggle toggle-success"/>
-                        <label for="add-site-preference-checkbox" class="label-available ml-2 font-body cursor-pointer">When available</label>
-                        <label for="add-site-preference-checkbox" class="label-strict ml-2 font-body cursor-pointer">Strict</label>
+                        <label for="add-site-preference-checkbox" class="ml-2 font-body cursor-pointer">
+                            <span class="label-available">When available</span>
+                            <span class="label-strict">Strict</span>
+                        </label>
                     </div>
                     <button id="add-site-preference-button" class="btn btn-active">Add</button>
                 </div>
@@ -57,8 +61,8 @@
             </div>
 
             <!-- Geofencing -->
-            <input type="radio" name="main_tabs" role="tab" class="tab" aria-label="Geofencing"/>
-            <div role="tabpanel" class="tab-content bg-transparent border-black rounded-box p-5">
+            <input id="tab-geofencing" type="radio" name="main_tabs" role="tab" class="tab" aria-label="Geofencing"/>
+            <div role="tabpanel" aria-labelledby="tab-geofencing" class="tab-content bg-transparent border-black rounded-box p-5">
                 <!-- SCIONLab -->
                 <div class="card bg-default">
                     <div class="card-body p-5">
@@ -115,8 +119,8 @@
             </div>
 
             <!-- Advanced -->
-            <input type="radio" name="main_tabs" role="tab" class="tab" aria-label="Advanced"/>
-            <div role="tabpanel" class="tab-content bg-transparent border-black rounded-box p-5">
+            <input id="tab-advanced" type="radio" name="main_tabs" role="tab" class="tab" aria-label="Advanced"/>
+            <div role="tabpanel" aria-labelledby="tab-advanced" class="tab-content bg-transparent border-black rounded-box p-5">
                 <!-- Proxy Configuration-->
                 <div class="card bg-default">
                     <div class="card-body p-5">
@@ -137,7 +141,7 @@
                         <!-- Manual Configuration -->
                         <div id="manual-configuration-container" class="card bg-secondary mt-3">
                             <div class="card-body p-5">
-                                <h4 class="font-semibold">Manual Configuration</h4>
+                                <h3 class="font-semibold">Manual Configuration</h3>
                                 <label for="proxy-scheme-select" class="font-body font-semibold">Protocol</label>
                                 <select id="proxy-scheme-select" class="select select-bordered">
                                     <!-- The options are generated by TS -->

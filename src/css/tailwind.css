@@ -18,11 +18,6 @@ body {
     --table-zebra-new-row-bg: rgb(209 213 219 / 0.25);
 }
 
-h3 {
-    min-width: 300px;
-    text-align: center;
-}
-
 /* ===== POPUP ===== */
 #popup-tab-list > .tab:is(input:checked) {
     background-color: var(--new-widget-bg) !important;
@@ -81,12 +76,12 @@ h3 {
     display: none;
 }
 
-.strict-mode-toggle:checked ~ .label-available {
+.strict-mode-toggle:checked + label .label-available {
     display: none;
 }
 
-.strict-mode-toggle:checked ~ .label-strict {
-    display: block;
+.strict-mode-toggle:checked + label .label-strict {
+    display: inline;
 }
 
 .strict-mode-toggle ~ label {

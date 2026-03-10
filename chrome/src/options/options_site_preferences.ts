@@ -35,8 +35,10 @@ async function updateSitePreferencesTable() {
             <td>
                 <div class="toggle-container flex flex-row items-center">
                     <input id="${elementId}" type="checkbox" class="strict-mode-toggle toggle toggle-success" ${isStrict ? "checked" : ""}/>
-                    <label for="${elementId}" class="label-available ml-2 font-body cursor-pointer">When available</label>
-                    <label for="${elementId}" class="label-strict ml-2 font-body cursor-pointer">Strict</label>
+                    <label for="${elementId}" class="ml-2 font-body cursor-pointer">
+                        <span class="label-available">When available</span>
+                        <span class="label-strict">Strict</span>
+                    </label>
                 </div>
             </td>
         </tr>`
