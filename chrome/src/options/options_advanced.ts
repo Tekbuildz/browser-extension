@@ -1,10 +1,10 @@
 import {
     DEFAULT_PROXY_HOST,
+    fetchAndApplyScionPAC,
     HTTP_PROXY_SCHEME,
     HTTPS_PROXY_PORT,
     HTTPS_PROXY_SCHEME,
     loadProxySettingsNoUpdate,
-    type OnMessageMessageType,
     proxyHost,
     proxyPort,
     proxyScheme
@@ -33,19 +33,26 @@ export async function initializeAdvanced() {
     proxySchemeSelect.options.add(httpOption);
 
     // initializing the proxy-configuration values displayed in the UI
-    await loadProxySettingsNoUpdate();
-    proxySchemeSelect.value = proxyScheme;
-    proxyHostInput.value = proxyHost;
-    proxyPortInput.value = proxyPort;
+    await updateProxyValues();
 
     const autoProxyConfig = await getSyncValue(AUTO_PROXY_CONFIG, true);
     proxyAutoConfigurationCheckbox.checked = autoProxyConfig;
-    updateManualProxyConfigurationForm(autoProxyConfig);
+    await updateManualProxyConfigurationForm(autoProxyConfig);
 
     // event handler registrations
     proxyAutoConfigurationCheckbox.addEventListener("click", proxyAutoConfigurationCheckboxOnClick);
     proxySaveSettingsButton.addEventListener("click", proxySaveSettingsButtonOnClick);
     proxyResetDefaultButton.addEventListener("click", proxyResetDefaultButtonOnClick);
+}
+
+/**
+ * Updates the proxy-configuration values displayed in the UI based on the values in storage.
+ */
+async function updateProxyValues() {
+    await loadProxySettingsNoUpdate();
+    proxySchemeSelect.value = proxyScheme;
+    proxyHostInput.value = proxyHost;
+    proxyPortInput.value = proxyPort;
 }
 
 /**
@@ -55,7 +62,7 @@ export async function initializeAdvanced() {
 async function proxyAutoConfigurationCheckboxOnClick() {
     const isChecked = proxyAutoConfigurationCheckbox.checked;
     await saveSyncValue(AUTO_PROXY_CONFIG, isChecked);
-    updateManualProxyConfigurationForm(isChecked);
+    await updateManualProxyConfigurationForm(isChecked);
 }
 
 async function proxySaveSettingsButtonOnClick() {
@@ -98,7 +105,7 @@ function proxyResetDefaultButtonOnClick() {
 /**
  * Updates all form fields conditioned on the provided {@link autoProxyConfigEnabled}.
  */
-function updateManualProxyConfigurationForm(autoProxyConfigEnabled: boolean) {
+async function updateManualProxyConfigurationForm(autoProxyConfigEnabled: boolean) {
     proxySchemeSelect.disabled = autoProxyConfigEnabled;
     proxyHostInput.disabled = autoProxyConfigEnabled;
     proxyPortInput.disabled = autoProxyConfigEnabled;
@@ -106,7 +113,7 @@ function updateManualProxyConfigurationForm(autoProxyConfigEnabled: boolean) {
     proxyResetDefaultButton.disabled = autoProxyConfigEnabled;
 
     if (autoProxyConfigEnabled) {
-        const message = {action: "fetchAndApplyScionPAC"} as OnMessageMessageType;
-        chrome.runtime.sendMessage(message);
+        await fetchAndApplyScionPAC();
+        await updateProxyValues();
     }
 }
