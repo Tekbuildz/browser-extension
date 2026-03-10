@@ -142,8 +142,7 @@ export async function findRequestInDB(domain: RequestSchema[typeof DOMAIN]): Pro
 
     // update the timestamp, as this entry was requested
     entry.lastAccessed = now();
-    const addOrUpdateRequest = store.put(entry);
-    await requestToPromise(addOrUpdateRequest);
+    store.put(entry);
 
     await transactionDone(transaction);
 
@@ -171,7 +170,7 @@ export async function evictExpiredEntries() {
     const req = index.openCursor();
 
     await new Promise<void>((resolve, reject) => {
-        req.onsuccess = async () => {
+        req.onsuccess = () => {
             const cursor = req.result as IDBCursorWithValue | null;
             if (!cursor) {
                 resolve();
@@ -186,8 +185,7 @@ export async function evictExpiredEntries() {
                 return;
             }
 
-            const deleteRequest = store.delete(cursor.primaryKey);
-            await requestToPromise(deleteRequest);
+            store.delete(cursor.primaryKey);
             cursor.continue();
         };
 
@@ -245,15 +243,14 @@ async function evictLRU(store: IDBObjectStore, count: number): Promise<void> {
     const req = index.openCursor(); // ascending TTL
 
     await new Promise<void>((resolve, reject) => {
-        req.onsuccess = async () => {
+        req.onsuccess = () => {
             const cursor = req.result;
             if (!cursor || removed >= count) {
                 resolve();
                 return;
             }
 
-            const deleteRequest = store.delete(cursor.primaryKey);
-            await requestToPromise(deleteRequest);
+            store.delete(cursor.primaryKey);
             removed++;
             cursor.continue();
         };
