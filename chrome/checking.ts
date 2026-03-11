@@ -1,7 +1,7 @@
-import {isHostScion} from "./background_helpers/request_interception_handler.js";
+import {isHostScionHandleDnrRule} from "./background_helpers/request_interception_handler.js";
 import {clearTabResources} from "./shared/storage.js";
-import {safeHostname} from "./shared/utilities.js";
-import {initializeProxyHandler} from "./background_helpers/proxy_handler.js";
+import {initializeStrictModes, safeHostname} from "./shared/utilities.js";
+import {loadProxySettingsNoUpdate} from "./background_helpers/proxy_handler.js";
 
 const titleElement = document.getElementById("title") as HTMLHeadingElement;
 const spinnerElement = document.getElementById("spinner") as HTMLDivElement;
@@ -9,7 +9,8 @@ const statusElement = document.getElementById('status') as HTMLParagraphElement;
 const originalUrlElement = document.getElementById('original-url') as HTMLParagraphElement;
 
 async function init() {
-    await initializeProxyHandler();
+    await initializeStrictModes();
+    await loadProxySettingsNoUpdate();
 
     statusElement.textContent = 'Determining the original page you tried to open...';
 
@@ -46,7 +47,7 @@ async function init() {
     // clearing the resources must be done here, as onBeforeRequest only handles it in non-globalStrictMode, this is in order
     // not to clear tab resources added via the isHostScion call below
     if (currentTab.id && currentTab.id >= 0) await clearTabResources(currentTab.id);
-    const isScion = await isHostScion(host, host, currentTab.id !== undefined ? currentTab.id : chrome.tabs.TAB_ID_NONE);
+    const isScion = await isHostScionHandleDnrRule(host, host, currentTab.id !== undefined ? currentTab.id : chrome.tabs.TAB_ID_NONE);
     if (!isScion) {
         statusElement.textContent = "This page is NOT SCION-capable and was blocked in strict mode.";
         checkFinished()

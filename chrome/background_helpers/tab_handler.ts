@@ -1,5 +1,6 @@
 import {clearAllTabResources, clearTabResources, getTabResources} from "../shared/storage.js";
 import {safeHostname} from "../shared/utilities.js";
+
 type Tab = chrome.tabs.Tab;
 
 export function initializeTabListeners() {
@@ -56,11 +57,10 @@ export async function handleTabChange(tab: Tab) {
         }
 
         if (mainDomainSCIONEnabled) {
-            if (mixedContent) {
+            if (mixedContent)
                 await chrome.action.setIcon({path: "/images/scion-38_mixed.jpg"});
-            } else {
+            else
                 await chrome.action.setIcon({path: "/images/scion-38_enabled.jpg"});
-            }
         } else {
             await chrome.action.setIcon({path: "/images/scion-38_not_available.jpg"});
         }

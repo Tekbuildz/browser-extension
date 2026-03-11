@@ -8,7 +8,6 @@
 import {
     AUTO_PROXY_CONFIG,
     getSyncValue,
-    getSyncValues,
     GLOBAL_STRICT_MODE,
     ISD_ALL,
     ISD_WHITELIST,
@@ -19,7 +18,17 @@ import {
     saveSyncValue,
     saveSyncValues
 } from "./shared/storage.js";
-import {DEFAULT_PROXY_HOST, HTTPS_PROXY_PORT, HTTPS_PROXY_SCHEME} from "./background_helpers/proxy_handler.js";
+import {
+    DEFAULT_PROXY_HOST,
+    HTTPS_PROXY_PORT,
+    HTTPS_PROXY_SCHEME,
+    loadProxySettingsNoUpdate,
+    type OnMessageMessageType,
+    proxyHost,
+    proxyPort,
+    proxyScheme
+} from "./background_helpers/proxy_handler.js";
+import {GlobalStrictMode, initializeStrictModes} from "./shared/utilities.js";
 
 const DEFAULT_PROXY_SCHEME = HTTPS_PROXY_SCHEME;
 const DEFAULT_PROXY_PORT = HTTPS_PROXY_PORT;
@@ -58,6 +67,15 @@ const tableSitePreferencesRow = `
 const placeholderToggleID = "toggleISD-";
 
 document.addEventListener("DOMContentLoaded", async () => {
+    await initializeStrictModes();
+
+    toggleGlobalStrict.checked = GlobalStrictMode;
+    if (toggleGlobalStrict.checked) {
+        lineStrictMode.style.backgroundColor = '#48bb78';
+    } else {
+        lineStrictMode.style.backgroundColor = '#cccccc';
+    }
+
     const isdSet = await getSyncValue(ISD_WHITELIST, []);
     displayToggleISD(isdSet);
 
@@ -66,6 +84,24 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     registerToggleISDHandler();
     registerToggleAllHandler();
+
+    // Load saved settings
+    await loadProxySettingsNoUpdate();
+    proxySchemeElement.value = proxyScheme;
+    proxyHostElement.value = proxyHost;
+    proxyPortElement.value = proxyPort;
+
+    const saveProxySettingsButton = document.getElementById('save-proxy-settings') as HTMLButtonElement;
+    const resetProxyDefaultsButton = document.getElementById('reset-proxy-defaults') as HTMLButtonElement;
+    const autoProxyConfigInput = document.getElementById('auto-proxy-config') as HTMLInputElement;
+
+    const autoProxyConfig = await getSyncValue(AUTO_PROXY_CONFIG, true);
+    autoProxyConfigInput.checked = autoProxyConfig;
+    updateProxyFormState(autoProxyConfig);
+
+    saveProxySettingsButton.addEventListener('click', saveProxySettings);
+    resetProxyDefaultsButton.addEventListener('click', resetProxyDefaults);
+    autoProxyConfigInput.addEventListener('change', saveAutoProxyConfig);
 });
 
 function displayToggleISD(isdSet: string[]) {
@@ -159,17 +195,9 @@ function toggleGlobalStrictMode() {
     } else {
         lineStrictMode.style.backgroundColor = '#cccccc';
     }
+
     saveSyncValue(GLOBAL_STRICT_MODE, toggleGlobalStrict.checked);
 }
-
-getSyncValue(GLOBAL_STRICT_MODE, false).then(globalStrictMode => {
-    toggleGlobalStrict.checked = globalStrictMode;
-    if (toggleGlobalStrict.checked) {
-        lineStrictMode.style.backgroundColor = '#48bb78';
-    } else {
-        lineStrictMode.style.backgroundColor = '#cccccc';
-    }
-});
 
 function updateSitePreferences() {
     getSyncValue(PER_SITE_STRICT_MODE, {}).then(perSiteStrictMode => {
@@ -258,34 +286,10 @@ function updateProxyFormState(isAutoConfig: boolean) {
     });
     
     if (isAutoConfig) {
-      chrome.runtime.sendMessage({ action: "fetchAndApplyScionPAC" });
+        const message = { action: "fetchAndApplyScionPAC"} as OnMessageMessageType;
+        chrome.runtime.sendMessage(message);
     }
 }
-
-// Load saved settings
-document.addEventListener('DOMContentLoaded', function() {
-    getSyncValues({
-        [PROXY_SCHEME]: "https",
-        [PROXY_HOST]: "forward-proxy.scion",
-        [PROXY_PORT]: "9443",
-    }).then((items) => {
-        proxySchemeElement.value = items[PROXY_SCHEME];
-        proxyHostElement.value = items[PROXY_HOST];
-        proxyPortElement.value = items[PROXY_PORT];
-    });
-
-    const saveProxySettingsButton = document.getElementById('save-proxy-settings') as HTMLButtonElement;
-    const resetProxyDefaultsButton = document.getElementById('reset-proxy-defaults') as HTMLButtonElement;
-    const autoProxyConfigInput = document.getElementById('auto-proxy-config') as HTMLInputElement;
-    getSyncValue(AUTO_PROXY_CONFIG, true).then(autoProxyConfig => {
-        autoProxyConfigInput.checked = autoProxyConfig;
-        updateProxyFormState(autoProxyConfig);
-    });
-
-    saveProxySettingsButton.addEventListener('click', saveProxySettings);
-    resetProxyDefaultsButton.addEventListener('click', resetProxyDefaults);
-    autoProxyConfigInput.addEventListener('change', saveAutoProxyConfig);
-});
   
 function saveProxySettings() {
     const scheme = proxySchemeElement.value;

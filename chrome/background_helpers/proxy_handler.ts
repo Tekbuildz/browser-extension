@@ -1,6 +1,11 @@
-import {getSyncValues, PROXY_HOST, PROXY_PORT, PROXY_SCHEME, saveSyncValues, type SyncValueSchema} from "../shared/storage.js";
+import {AUTO_PROXY_CONFIG, getSyncValue, getSyncValues, PROXY_HOST, PROXY_PORT, PROXY_SCHEME, saveSyncValues, type SyncValueSchema} from "../shared/storage.js";
+import {GlobalStrictMode, PerSiteStrictMode} from "../shared/utilities.js";
+import {globalStrictModeUpdated, removeAllRules} from "./dnr_handler.js";
 import Mode = chrome.proxy.Mode;
 
+export type OnMessageMessageType = {
+    action: string;
+}
 type ProxyConfig = {
     [PROXY_SCHEME]: SyncValueSchema[typeof PROXY_SCHEME];
     [PROXY_HOST]: SyncValueSchema[typeof PROXY_HOST];
@@ -28,35 +33,52 @@ export let proxyPort = HTTPS_PROXY_PORT;
 export let proxyAddress = `${proxyScheme}://${proxyHost}:${proxyPort}`;
 
 export const WPAD_URL = `http://wpad/wpad_scion.dat`;
+// extracting the hostname from the WPAD URL, as it needs to be excluded from matching rules
+// note that this might cause other resources that share the same hostname to be excluded too
+export const WPAD_HOSTNAME = new URL(WPAD_URL).hostname;
 
 export async function initializeProxyHandler() {
     // Load saved configuration at startup
-    const {autoProxyConfig} = await chrome.storage.sync.get({autoProxyConfig: true});
+    const autoProxyConfig = await getSyncValue(AUTO_PROXY_CONFIG, true);
     if (autoProxyConfig) {
         await fetchAndApplyScionPAC();
     } else {
         await loadProxySettings();
     }
 
-    chrome.runtime.onMessage.addListener(async function (request, sender, sendResponse) {
-        if (request.action === "fetchAndApplyScionPAC") {
-            await fetchAndApplyScionPAC();
-            return true;
+    chrome.runtime.onMessage.addListener(function (request: any) {
+        const message = request as OnMessageMessageType;
+        if (message.action === "fetchAndApplyScionPAC") {
+            fetchAndApplyScionPAC();
         }
     });
 }
 
-export async function loadProxySettings() {
+/**
+ * Loads and populates the {@link proxyScheme}, {@link proxyHost}, {@link proxyPort}, and therefore the {@link proxyAddress}
+ * without updating the configuration itself. For this, consider {@link loadProxySettings}.
+ */
+export async function loadProxySettingsNoUpdate() {
     const items = await getSyncValues({
         [PROXY_SCHEME]: HTTPS_PROXY_SCHEME,
         [PROXY_HOST]: DEFAULT_PROXY_HOST,
         [PROXY_PORT]: HTTPS_PROXY_PORT,
     });
+
     proxyScheme = items[PROXY_SCHEME];
     proxyHost = items[PROXY_HOST];
     proxyPort = items[PROXY_PORT];
     proxyAddress = `${proxyScheme}://${proxyHost}:${proxyPort}`;
+}
 
+/**
+ * Loads and populates the {@link proxyScheme}, {@link proxyHost}, {@link proxyPort}, and therefore the {@link proxyAddress}
+ * and updates the configuration itself via {@link updateProxyConfiguration}.
+ *
+ * If no update of the proxy configuration is desired, consider {@link loadProxySettingsNoUpdate}.
+ */
+export async function loadProxySettings() {
+    await loadProxySettingsNoUpdate();
     await updateProxyConfiguration();
 }
 
@@ -99,6 +121,10 @@ function isValidPort(port: string) {
 }
 
 async function fetchAndApplyScionPAC() {
+    // temporarily removing all rules to allow all requests performed during proxy-search
+    const anyRuleIsEnforced = GlobalStrictMode || Object.keys(PerSiteStrictMode).length > 0;
+    if (anyRuleIsEnforced) await removeAllRules();
+
     try {
         const response = await fetch(WPAD_URL);
         if (!response.ok) {
@@ -140,6 +166,9 @@ async function fetchAndApplyScionPAC() {
         console.warn("Error on WPAD process, falling back to default:", error);
         await fallbackToDefaults();
     }
+
+    // reset the rules based on the values stored in storage
+    if (anyRuleIsEnforced) await globalStrictModeUpdated();
 }
 
 async function fallbackToDefaults() {

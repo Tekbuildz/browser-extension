@@ -2,19 +2,16 @@
 'use strict';
 
 
-import {getSyncValue, getSyncValues, getTabResources, PER_SITE_STRICT_MODE, PROXY_HOST, PROXY_PORT, PROXY_SCHEME, saveSyncValue, type SyncValueSchema} from "./shared/storage.js";
-import {DEFAULT_PROXY_HOST, HTTPS_PROXY_SCHEME, HTTPS_PROXY_PORT, proxyPathUsagePath, proxyHealthCheckPath} from "./background_helpers/proxy_handler.js";
-import {safeHostname} from "./shared/utilities.js";
+import {getTabResources, PER_SITE_STRICT_MODE, saveSyncValue} from "./shared/storage.js";
+import {loadProxySettingsNoUpdate, proxyAddress, proxyHealthCheckPath, proxyPathUsagePath} from "./background_helpers/proxy_handler.js";
+import {initializeStrictModes, PerSiteStrictMode, safeHostname, setPerSiteStrictMode} from "./shared/utilities.js";
 
 type Tab = chrome.tabs.Tab;
 type PerDomainPathUsage = { Domain: string, Path: string[], Strategy: string };
 type ProxyPathUsageResponse = PerDomainPathUsage[];
 
-const DEFAULT_PROXY_SCHEME = HTTPS_PROXY_SCHEME;
-const DEFAULT_PROXY_PORT = HTTPS_PROXY_PORT;
-
-const toggleRunning = document.getElementById('toggleRunning') as HTMLInputElement;
-const checkboxRunning = document.getElementById('checkboxRunning') as HTMLDivElement;
+const togglePerSiteStrictModeCheckbox = document.getElementById('togglePerSiteStrictMode') as HTMLInputElement;
+const togglePerSiteStrictModeContainer = document.getElementById('togglePerSiteStrictModeContainer') as HTMLDivElement;
 const lineRunning = document.getElementById("lineRunning") as HTMLDivElement;
 const scionmode = document.getElementById("scionmode") as HTMLSpanElement;
 const mainDomain = document.getElementById("maindomain") as HTMLDivElement;
@@ -400,71 +397,21 @@ const asNameMap: Record<string, string> = {
     "2:0:138": "IKEA AG"
 };
 
-let proxyAddress = `${DEFAULT_PROXY_SCHEME}://${DEFAULT_PROXY_HOST}:${DEFAULT_PROXY_PORT}`
-
-
-let perSiteStrictMode: SyncValueSchema[typeof PER_SITE_STRICT_MODE] = {};
 let popupMainDomain = "";
 
-checkboxRunning.onclick = toggleExtensionRunning;
+document.addEventListener("DOMContentLoaded", async () => {
+    await initializeStrictModes();
+    await loadProxySettingsNoUpdate();
+    await loadRequestInfo();
 
-buttonOptionsButton.addEventListener('click', function () {
-    chrome.tabs.create({'url': 'chrome://extensions/?options=' + chrome.runtime.id});
-});
-
-getSyncValue(PER_SITE_STRICT_MODE, {}).then((result) => {
-    perSiteStrictMode = result;
-    loadRequestInfo();
-});
-
-document.addEventListener("DOMContentLoaded", () => {
-    getSyncValues({
-        [PROXY_SCHEME]: DEFAULT_PROXY_SCHEME,
-        [PROXY_HOST]: DEFAULT_PROXY_HOST,
-        [PROXY_PORT]: DEFAULT_PROXY_PORT,
-    }).then((result) => {
-        let proxyScheme = result[PROXY_SCHEME];
-        let proxyHost = result[PROXY_HOST];
-        let proxyPort = result[PROXY_PORT];
-        proxyAddress = `${proxyScheme}://${proxyHost}:${proxyPort}`;
-
-        checkProxyStatus();
-    });
-});
-
-const updatePathUsage = () => {
-    pathUsageContainer.innerHTML = "";
-
-    console.log("get path usage")
-    fetch(`${proxyAddress}${proxyPathUsagePath}`, {
-        method: "GET"
-    }).then(response => {
-        if (response.status === 200) {
-            response.json().then(res => {
-                const json = res as ProxyPathUsageResponse;
-                console.log(json)
-                const startIndex = 2; // The first indices are already used the parent container
-                if (!json || json.length === 0) {
-                    pathUsageContainer.innerHTML = "<p>No path usage data available\n</p>" + "<p>Try to configure your own policies to have acces to path usage data (under <i>Manage Preferences</i>).</p>";
-                }
-
-                json.forEach((pathUsage: PerDomainPathUsage) => {
-                    console.log(pathUsage.Domain.split(":")[0])
-                    // we only expect one match
-                    if (popupMainDomain && pathUsage.Domain.split(":")[0] === popupMainDomain) {
-                        let pathUsageChild = newPathUsageChild(pathUsage, startIndex);
-                        pathUsageContainer.innerHTML += pathUsageChild;
-                    }
-                })
-                if (pathUsageContainer.innerHTML === "") {
-                    pathUsageContainer.innerHTML = "<p>No path usage data available for " + (popupMainDomain || "current domain") + "\n</p>" + "<p>Try to configure your own policies to have acces to path usage data (under <i>Manage Preferences</i>).</p>";
-                    return;
-                }
-            });
-        }
+    togglePerSiteStrictModeCheckbox.addEventListener("change", togglePerSiteStrictMode);
+    togglePerSiteStrictModeContainer.onclick = togglePerSiteStrictMode;
+    buttonOptionsButton.addEventListener('click', function () {
+        chrome.tabs.create({'url': 'chrome://extensions/?options=' + chrome.runtime.id});
     });
 
-};
+    checkProxyStatus();
+});
 
 function checkProxyStatus() {
     proxyStatusMessage.textContent = "Checking proxy status...";
@@ -629,14 +576,14 @@ function returnCountryCode(isd: number) {
 }
 
 // Start/Stop global forwarding
-function toggleExtensionRunning() {
-    toggleRunning.checked = !toggleRunning.checked;
+function togglePerSiteStrictMode() {
+    togglePerSiteStrictModeCheckbox.checked = !togglePerSiteStrictModeCheckbox.checked;
     const newPerSiteStrictMode = {
-        ...perSiteStrictMode,
-        [popupMainDomain]: toggleRunning.checked,
+        ...PerSiteStrictMode,
+        [popupMainDomain]: togglePerSiteStrictModeCheckbox.checked,
     };
 
-    if (toggleRunning.checked) {
+    if (togglePerSiteStrictModeCheckbox.checked) {
         mainDomain.innerHTML = "SCION preference for " + popupMainDomain;
         lineRunning.style.backgroundColor = "#48bb78";
         scionmode.innerHTML = "Strict";
@@ -647,9 +594,8 @@ function toggleExtensionRunning() {
     }
 
     saveSyncValue(PER_SITE_STRICT_MODE, newPerSiteStrictMode).then(() => {
-        perSiteStrictMode = newPerSiteStrictMode;
+        setPerSiteStrictMode(newPerSiteStrictMode);
     });
-
 }
 
 async function loadRequestInfo() {
@@ -676,21 +622,21 @@ async function loadRequestInfo() {
     const resources = await getTabResources(activeTabId) ?? [];
     const mainDomainSCIONEnabled = resources.find(resource => resource[0] === hostname && resource[1]);
 
-    if (perSiteStrictMode[hostname]) {
+    if (PerSiteStrictMode[hostname]) {
         mainDomain.innerHTML = "SCION preference for " + hostname;
-        toggleRunning.checked = true; // true
-        toggleRunning.classList.remove("halfchecked");
+        togglePerSiteStrictModeCheckbox.checked = true; // true
+        togglePerSiteStrictModeCheckbox.classList.remove("halfchecked");
         lineRunning.style.backgroundColor = "#48bb78";
         scionmode.innerHTML = "Strict";
     } else if (mainDomainSCIONEnabled) {
         mainDomain.innerHTML = "SCION preference for " + hostname;
-        toggleRunning.checked = false; // true
-        toggleRunning.classList.add("halfchecked");
+        togglePerSiteStrictModeCheckbox.checked = false; // true
+        togglePerSiteStrictModeCheckbox.classList.add("halfchecked");
         lineRunning.style.backgroundColor = "#cccccc";
         scionmode.innerHTML = "When available";
     } else {
         scionModePreference.style.display = "none";
-    }// TODO: Else case would be no SCION... toggleRunning.checked = false;
+    }// TODO: Else case would be no SCION... togglePerSiteStrictModeCheckbox.checked = false;
 
     let mixedContent = false
     for (const resource of resources) {
@@ -722,4 +668,37 @@ async function loadRequestInfo() {
     // Update path usage for the current domain
     updatePathUsage();
 }
+
+const updatePathUsage = () => {
+    pathUsageContainer.innerHTML = "";
+
+    console.log("get path usage")
+    fetch(`${proxyAddress}${proxyPathUsagePath}`, {
+        method: "GET"
+    }).then(response => {
+        if (response.status === 200) {
+            response.json().then(res => {
+                const json = res as ProxyPathUsageResponse;
+                console.log(json)
+                const startIndex = 2; // The first indices are already used the parent container
+                if (!json || json.length === 0) {
+                    pathUsageContainer.innerHTML = "<p>No path usage data available\n</p>" + "<p>Try to configure your own policies to have acces to path usage data (under <i>Manage Preferences</i>).</p>";
+                }
+
+                json.forEach((pathUsage: PerDomainPathUsage) => {
+                    console.log(pathUsage.Domain.split(":")[0])
+                    // we only expect one match
+                    if (popupMainDomain && pathUsage.Domain.split(":")[0] === popupMainDomain) {
+                        let pathUsageChild = newPathUsageChild(pathUsage, startIndex);
+                        pathUsageContainer.innerHTML += pathUsageChild;
+                    }
+                })
+                if (pathUsageContainer.innerHTML === "") {
+                    pathUsageContainer.innerHTML = "<p>No path usage data available for " + (popupMainDomain || "current domain") + "\n</p>" + "<p>Try to configure your own policies to have acces to path usage data (under <i>Manage Preferences</i>).</p>";
+                    return;
+                }
+            });
+        }
+    });
+};
 
