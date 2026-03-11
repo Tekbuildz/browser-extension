@@ -31,14 +31,17 @@ async function updateSitePreferencesTable() {
         const elementId = getSitePreferenceId(siteIndex);
         sitePreferencesTable.innerHTML += `
         <tr>
-            <td>${site}</td>
+            <td><label for="${elementId}">${site}</label></td>
             <td>
                 <div class="toggle-container flex flex-row items-center">
-                    <input id="${elementId}" type="checkbox" class="strict-mode-toggle toggle toggle-success" ${isStrict ? "checked" : ""}/>
-                    <label for="${elementId}" class="ml-2 font-body cursor-pointer">
-                        <span class="label-available">When available</span>
-                        <span class="label-strict">Strict</span>
-                    </label>
+                    <input id="${elementId}"
+                           type="checkbox"
+                           class="strict-mode-toggle toggle toggle-success" ${isStrict ? "checked" : ""}
+                           aria-describedby="${elementId}${isStrict ? "-strict" : "-when-available"}"/>
+                    <p class="ml-2 font-body cursor-pointer">
+                        <span id="${elementId}-when-available" class="label-available text-nowrap">When available</span>
+                        <span id="${elementId}-strict" class="label-strict">Strict</span>
+                    </p>
                 </div>
             </td>
         </tr>`
@@ -67,6 +70,8 @@ async function sitePreferenceCheckboxOnClick(siteIndex: number) {
         console.log("[sitePreferenceCheckboxOnClick]: Failed to find element with ID: ", elementId);
         return;
     }
+
+    checkbox.setAttribute("aria-describedby", checkbox.checked ? `${elementId}-strict` : `${elementId}-when-available`);
 
     const site = Object.keys(PerSiteStrictMode)[siteIndex];
     PerSiteStrictMode[site] = checkbox.checked;
