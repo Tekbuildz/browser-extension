@@ -3,9 +3,9 @@
 
 
 import {getSyncValue, getSyncValues, getTabResources, GLOBAL_STRICT_MODE, PER_SITE_STRICT_MODE, PROXY_HOST, PROXY_PORT, PROXY_SCHEME, saveSyncValue, type SyncValueSchema} from "../shared/storage.js";
-import {DEFAULT_PROXY_HOST, HTTPS_PROXY_SCHEME, HTTPS_PROXY_PORT, proxyPathUsagePath, proxyHealthCheckPath} from "../background_helpers/proxy_handler.js";
+import {DEFAULT_PROXY_HOST, HTTPS_PROXY_PORT, HTTPS_PROXY_SCHEME, proxyHealthCheckPath, proxyPathUsagePath} from "../background_helpers/proxy_handler.js";
 import {safeHostname} from "../shared/utilities.js";
-import {asNameMap, getFlagPath, returnCountryCode} from "./popup_helper.js";
+import {getASName, getCountryCode, getCountryName, getFlagPath} from "./popup_helper.js";
 
 export type PerDomainPathUsage = { Domain: string, Path: string[], Strategy: string };
 type Tab = chrome.tabs.Tab;
@@ -187,14 +187,17 @@ function updatePathUsageVisuals(pathUsage: PerDomainPathUsage) {
 
     pathUsageSite.textContent = pathUsage.Domain;
     pathUsageStrategy.textContent = pathUsage.Strategy;
-    pathUsageISDs.innerHTML = [...isds].map((isd: number) => `
-        <div class="flex flex-row space-x-2 items-center">
-            <img style="height: 25px" src=${getFlagPath(returnCountryCode(isd))} alt=""/>
-            <p>(${returnCountryCode(isd)})</p>
-        </div>
-    `).join("");
+    pathUsageISDs.innerHTML = [...isds].map((isd: number) => {
+        const countryCode = getCountryCode(isd);
+        return `
+            <div class="flex flex-row space-x-2 items-center">
+                <img style="height: 25px" src=${getFlagPath(countryCode)} alt="Flag of ${getCountryName(countryCode)}"/>
+                <p>(${countryCode})</p>
+            </div>
+        `
+    }).join("");
     pathUsagePath.innerHTML = pathUsage.Path.map(ia => `
-        <p>${ia} (${asNameMap[ia.split("-")[1]]})</p>
+        <p>${ia} (${getASName(ia.split("-")[1])})</p>
     `).join("");
 }
 

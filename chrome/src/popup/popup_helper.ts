@@ -26,60 +26,104 @@ export function getAsesFromPathUsage(pathUsage: PerDomainPathUsage) {
     return new Set(pathUsage.Path.map(v => v.split("-")[1]));
 }
 
-export function returnCountryCode(isd: number) {
-    const isdMap: Record<number, string> = {
-        // Assignments used by SCIONLab
-        19: "EU",
-        17: "CH",
-        16: "AWS",
-        18: "US",
-        21: "JP",
-        22: "TW",
-        25: "CN",
-        20: "KR",
-        26: "KREONET",
-        // Assignments used by the production network
-        64: "CH",
-        65: "EU",
-        66: "AS",
-        67: "NA",
-        68: "RESERVED",
-        69: "RESERVED",
-        70: "SSFN",
-        71: "SCIERA",
-        72: "HVR",
-    }
-    let code: string | undefined = isdMap[isd];
+export function getASName(as: string) {
+    return asNameMap[as];
+}
+
+export function getCountryCode(isd: number) {
+    let code: CountryCode | undefined = isdMap[isd];
     if (code === undefined) {
-        return "UNKNOWN";
+        return CountryCode.UNKNOWN;
     }
     return code;
 }
 
-const flagMap: Record<string, string> = {
-    "EU": "european-union.png",
-    "CH": "switzerland.png",
-    "AWS": "amazon.png",
-    "US": "united-states.png",
-    "JP": "japan.png",
-    "TW": "taiwan.png",
-    "CN": "china.png",
-    "KR": "south-korea.png",
-    "KREONET": "south-korea.png",
-    "AS": "asia.png",
-    "NA": "north-america.png",
-    "SSFN": "switzerland.png",
-    "SCIERA": "scion-0.png",
-    "HVR": "hin.png",
-    "RESERVED": "unknown.png",
-    "UNKNOWN": "unknown.png",
-}
-export function getFlagPath(countryCode: string) {
-    const basePath = "/images/";
-    return basePath + flagMap[countryCode];
+export function getCountryName(countryCode: CountryCode) {
+    return countryMap[countryCode];
 }
 
-export const asNameMap: Record<string, string> = {
+export function getFlagPath(countryCode: CountryCode) {
+    const basePath = "/images/";
+    return basePath + imageNameMap[countryCode];
+}
+
+enum CountryCode {
+    EU = "EU",
+    CH = "CH",
+    AWS = "AWS",
+    US = "US",
+    JP = "JP",
+    TW = "TW",
+    CN = "CN",
+    KR = "KR",
+    KREONET = "KREONET",
+    AS = "AS",
+    NA = "NA",
+    SSFN = "SSFN",
+    SCIERA = "SCIERA",
+    HVR = "HVR",
+    RESERVED = "RESERVED",
+    UNKNOWN = "UNKNOWN",
+}
+const isdMap: Record<number, CountryCode> = {
+    // Assignments used by SCIONLab
+    19: CountryCode.EU,
+    17: CountryCode.CH,
+    16: CountryCode.AWS,
+    18: CountryCode.US,
+    21: CountryCode.JP,
+    22: CountryCode.TW,
+    25: CountryCode.CN,
+    20: CountryCode.KR,
+    26: CountryCode.KREONET,
+    // Assignments used by the production network
+    64: CountryCode.CH,
+    65: CountryCode.EU,
+    66: CountryCode.AS,
+    67: CountryCode.NA,
+    68: CountryCode.RESERVED,
+    69: CountryCode.RESERVED,
+    70: CountryCode.SSFN,
+    71: CountryCode.SCIERA,
+    72: CountryCode.HVR,
+}
+const imageNameMap: Record<CountryCode, string> = {
+    [CountryCode.EU]: "european-union.png",
+    [CountryCode.CH]: "switzerland.png",
+    [CountryCode.AWS]: "amazon.png",
+    [CountryCode.US]: "united-states.png",
+    [CountryCode.JP]: "japan.png",
+    [CountryCode.TW]: "taiwan.png",
+    [CountryCode.CN]: "china.png",
+    [CountryCode.KR]: "south-korea.png",
+    [CountryCode.KREONET]: "south-korea.png",
+    [CountryCode.AS]: "asia.png",
+    [CountryCode.NA]: "north-america.png",
+    [CountryCode.SSFN]: "switzerland.png",
+    [CountryCode.SCIERA]: "scion-0.png",
+    [CountryCode.HVR]: "hin.png",
+    [CountryCode.RESERVED]: "unknown.png",
+    [CountryCode.UNKNOWN]: "unknown.png",
+}
+const countryMap: Record<CountryCode, string> = {
+    [CountryCode.EU]: "European Union",
+    [CountryCode.CH]: "Switzerland",
+    [CountryCode.AWS]: "Amazon",
+    [CountryCode.US]: "United States",
+    [CountryCode.JP]: "Japan",
+    [CountryCode.TW]: "Taiwan",
+    [CountryCode.CN]: "China",
+    [CountryCode.KR]: "South Korea",
+    [CountryCode.KREONET]: "South Korea",
+    [CountryCode.AS]: "Asia",
+    [CountryCode.NA]: "North America",
+    [CountryCode.SSFN]: "Switzerland",
+    [CountryCode.SCIERA]: "SCIERA",
+    [CountryCode.HVR]: "Health Info Net (HIN)",
+    [CountryCode.RESERVED]: "Reserved",
+    [CountryCode.UNKNOWN]: "Unknown",
+}
+const asNameMap: Record<string, string> = {
     "88": "Princeton University - CITP",
     "225": "University of Virginia",
     "559": "SWITCH",
