@@ -9,10 +9,10 @@
 <body class="h-full min-h-fit">
     <div class="w-full mx-auto px-2 py-5" style="width: 600px;">
         <h1 class="pb-4 font-semibold" style="font-size: x-large;">SCION Extension Options</h1>
-        <div class="tabs tabs-lifted" id="options-tab-list">
+        <div role="tablist" class="tabs tabs-lifted" id="options-tab-list">
             <!-- General -->
-            <input id="tab-general" type="radio" name="main_tabs" class="tab" aria-label="General" checked/>
-            <div aria-labelledby="tab-general" class="tab-content bg-transparent border-black rounded-box p-5">
+            <input id="tab-general" type="radio" name="main_tabs" role="tab" class="tab" aria-label="General" checked/>
+            <div role="tabpanel" aria-labelledby="tab-general" class="tab-content bg-transparent border-black rounded-box p-5">
                 <div class="card bg-default">
                     <div class="card-body p-5">
                         <div class="title-row flex flex-row justify-between">
@@ -27,8 +27,8 @@
             </div>
 
             <!-- Site Preferences -->
-            <input id="tab-site-preferences" type="radio" name="main_tabs" class="tab" aria-label="Site Preferences"/>
-            <div aria-labelledby="tab-site-preferences" class="tab-content bg-transparent border-black rounded-box p-5">
+            <input id="tab-site-preferences" type="radio" name="main_tabs" role="tab" class="tab" aria-label="Site Preferences"/>
+            <div role="tabpanel" aria-labelledby="tab-site-preferences" class="tab-content bg-transparent border-black rounded-box p-5">
                 <div class="font-body">Add a preference for a domain (including all requested cross-domain resources).</div>
 
                 <div class="flex flex-row justify-between items-center my-4">
@@ -61,8 +61,8 @@
             </div>
 
             <!-- Geofencing -->
-            <input id="tab-geofencing" type="radio" name="main_tabs" class="tab" aria-label="Geofencing"/>
-            <div aria-labelledby="tab-geofencing" class="tab-content bg-transparent border-black rounded-box p-5">
+            <input id="tab-geofencing" type="radio" name="main_tabs" role="tab" class="tab" aria-label="Geofencing"/>
+            <div role="tabpanel" aria-labelledby="tab-geofencing" class="tab-content bg-transparent border-black rounded-box p-5">
                 <!-- SCIONLab -->
                 <div class="card bg-default">
                     <div class="card-body p-5">
@@ -119,8 +119,8 @@
             </div>
 
             <!-- Advanced -->
-            <input id="tab-advanced" type="radio" name="main_tabs" class="tab" aria-label="Advanced"/>
-            <div aria-labelledby="tab-advanced" class="tab-content bg-transparent border-black rounded-box p-5">
+            <input id="tab-advanced" type="radio" name="main_tabs" role="tab" class="tab" aria-label="Advanced"/>
+            <div role="tabpanel" aria-labelledby="tab-advanced" class="tab-content bg-transparent border-black rounded-box p-5">
                 <!-- Proxy Configuration-->
                 <div class="card bg-default">
                     <div class="card-body p-5">
