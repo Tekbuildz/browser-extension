@@ -7,6 +7,7 @@ const sitePreferencesTable = document.getElementById("site-preferences-table") a
 // elements used when adding a new site preference
 const addSitePreferenceDomainInput = document.getElementById("add-site-preference-domain-input") as HTMLInputElement;
 const addSitePreferenceCheckbox = document.getElementById("add-site-preference-checkbox") as HTMLInputElement;
+const addSitePreferenceCheckboxDescription = document.getElementById("add-site-preference-checkbox-description") as HTMLParagraphElement;
 const addSitePreferenceButton = document.getElementById("add-site-preference-button") as HTMLButtonElement;
 
 /**
@@ -14,8 +15,12 @@ const addSitePreferenceButton = document.getElementById("add-site-preference-but
  */
 export async function initializeSitePreferences() {
     addSitePreferenceButton.addEventListener("click", addSitePreferenceButtonOnClick);
+    addSitePreferenceCheckbox.addEventListener("click", addSitePreferenceCheckboxOnClick)
 
     await updateSitePreferencesTable();
+
+    // execute once, to initialize the description of the checkbox
+    addSitePreferenceCheckboxOnClick();
 }
 
 /**
@@ -101,4 +106,14 @@ async function addSitePreferenceButtonOnClick() {
     addSitePreferenceCheckbox.checked = false;
 
     await updateSitePreferencesTable();
+}
+
+/**
+ * Updates the description describing the state of the toggle-button.
+ */
+function addSitePreferenceCheckboxOnClick() {
+    if (addSitePreferenceCheckbox.checked)
+        addSitePreferenceCheckboxDescription.textContent = "Strict";
+    else
+        addSitePreferenceCheckboxDescription.textContent = "When available";
 }

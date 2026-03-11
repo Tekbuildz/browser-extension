@@ -74,18 +74,6 @@ body {
     background-color: var(--table-zebra-new-row-bg);
 }
 
-.label-strict {
-    display: none;
-}
-
-.strict-mode-toggle:checked + label .label-available {
-    display: none;
-}
-
-.strict-mode-toggle:checked + label .label-strict {
-    display: inline;
-}
-
 .strict-mode-toggle ~ label {
     min-width: 90px;
 }
