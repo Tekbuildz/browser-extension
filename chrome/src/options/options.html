@@ -29,7 +29,7 @@
             <!-- Site Preferences -->
             <input id="tab-site-preferences" type="radio" name="main_tabs" role="tab" class="tab" aria-label="Site Preferences"/>
             <div role="tabpanel" aria-labelledby="tab-site-preferences" class="tab-content bg-transparent border-black rounded-box p-5">
-                <div class="font-body">Add a preference for a domain (including all requested cross-domain resources).</div>
+                <div class="font-body" tabindex="0">Add a preference for a domain (including all requested cross-domain resources).</div>
 
                 <div class="flex flex-row justify-between items-center my-4">
                     <input id="add-site-preference-domain-input" type="text" placeholder="Enter domain" class="input input-bordered" aria-label="Enter domain"/>
@@ -66,7 +66,7 @@
                 <!-- SCIONLab -->
                 <div class="card bg-default">
                     <div class="card-body p-5">
-                        <h2 class="card-title">SCIONLab</h2>
+                        <h2 class="card-title" tabindex="0">SCIONLab</h2>
                         <div class="card-content bg-secondary p-2 rounded-box">
                             <table class="table table-custom-zebra">
                                 <!-- Header -->
@@ -124,7 +124,7 @@
                 <!-- Proxy Configuration-->
                 <div class="card bg-default">
                     <div class="card-body p-5">
-                        <h2 class="card-title">Proxy Configuration</h2>
+                        <h2 class="card-title" tabindex="0">Proxy Configuration</h2>
                         <!-- Auto Configuration -->
                         <div id="auto-configuration-container" class="card bg-secondary">
                             <div class="card-body p-5">
