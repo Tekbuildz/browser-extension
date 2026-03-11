@@ -238,28 +238,35 @@ async function loadRequestInfo() {
     }// TODO: Else case would be no SCION... toggleRunning.checked = false;
 
     let mixedContent = false
-    for (const resource of resources) {
+    domainList.innerHTML += resources.map(resource => {
         const domain = resource[0];
         const scionEnabled = resource[1];
 
-        const div = document.createElement("div");
-        div.classList.add("badge", scionEnabled ? "badge-success" : "badge-error", "gap-2", "pt-3", "pb-3");
-
+        let svg: string;
         if (scionEnabled) {
-            div.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0 stroke-current" fill="none" viewBox="0 0 24 24">`
-                + `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M4 12l4 4 8-8"/>`
-                + `</svg>`
-                + domain;
+            svg = `
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0 stroke-current" fill="none" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M4 12l4 4 8-8"/>
+                </svg>
+            `;
         } else {
-            div.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block h-4 w-4 stroke-current">`
-                + `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>`
-                + `</svg>`
-                + domain;
+            svg = `
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block h-4 w-4 stroke-current">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            `;
             mixedContent = true;
         }
 
-        domainList.appendChild(div);
-    }
+        // adding a ':' before "allowed" and "blocked", such that the screen reader will enforce a pause between reading the domain name and the status
+        // otherwise, e.g. with "ethz.ch allowed" the screen reader might read "ethz dot challowed", the latter being fused into a single word
+        return `
+            <div class="badge ${scionEnabled ? "badge-success" : "badge-error"} gap-2 pt-3 pb-3" >
+                ${svg}${domain}
+                <span class="sr-only">${scionEnabled ? ":allowed" : ":blocked"}</span>
+            </div>
+        `;
+    }).join("");
 
     if (perSiteStrictMode[hostname] || globalStrictMode) {
         if (mainDomainSCIONEnabled) {
