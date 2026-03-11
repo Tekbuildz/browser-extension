@@ -19,6 +19,7 @@ const proxyAutoConfigurationCheckbox = document.getElementById("proxy-auto-confi
 const proxySchemeSelect = document.getElementById("proxy-scheme-select") as HTMLSelectElement;
 const proxyHostInput = document.getElementById("proxy-host-input") as HTMLInputElement;
 const proxyPortInput = document.getElementById("proxy-port-input") as HTMLInputElement;
+const proxySaveSettingsButtonStatus = document.getElementById("proxy-save-settings-button-status") as HTMLDivElement;
 const proxySaveSettingsButton = document.getElementById("proxy-save-settings-button") as HTMLButtonElement;
 const proxyResetDefaultButton = document.getElementById("proxy-reset-default-button") as HTMLButtonElement;
 
@@ -87,10 +88,17 @@ async function proxySaveSettingsButtonOnClick() {
     const originalText = proxySaveSettingsButton.textContent;
     proxySaveSettingsButton.textContent = "Settings Saved!";
     proxySaveSettingsButton.disabled = true;
+
+    // ensure notification for screen reader users
+    proxySaveSettingsButtonStatus.textContent = "";
+    requestAnimationFrame(() => {
+        proxySaveSettingsButtonStatus.textContent = "Settings Saved";
+    });
+
     setTimeout(() => {
         proxySaveSettingsButton.textContent = originalText;
         proxySaveSettingsButton.disabled = false;
-    }, 1500);
+    }, 2500);
 }
 
 /**
