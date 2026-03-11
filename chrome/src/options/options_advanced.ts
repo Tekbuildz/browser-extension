@@ -20,6 +20,7 @@ const proxySchemeSelect = document.getElementById("proxy-scheme-select") as HTML
 const proxyHostInput = document.getElementById("proxy-host-input") as HTMLInputElement;
 const proxyPortInput = document.getElementById("proxy-port-input") as HTMLInputElement;
 const proxySaveSettingsButtonStatus = document.getElementById("proxy-save-settings-button-status") as HTMLDivElement;
+const proxyResetDefaultButtonStatus = document.getElementById("proxy-reset-default-button-status") as HTMLDivElement;
 const proxySaveSettingsButton = document.getElementById("proxy-save-settings-button") as HTMLButtonElement;
 const proxyResetDefaultButton = document.getElementById("proxy-reset-default-button") as HTMLButtonElement;
 
@@ -108,6 +109,11 @@ function proxyResetDefaultButtonOnClick() {
     proxySchemeSelect.value = DEFAULT_PROXY_SCHEME;
     proxyHostInput.value = DEFAULT_PROXY_HOST;
     proxyPortInput.value = DEFAULT_PROXY_PORT;
+
+    proxyResetDefaultButtonStatus.textContent = "";
+    requestAnimationFrame(() => {
+        proxyResetDefaultButtonStatus.textContent = "Form fields reset, values not saved yet";
+    });
 }
 
 /**
