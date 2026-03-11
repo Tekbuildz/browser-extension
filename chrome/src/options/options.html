@@ -17,9 +17,9 @@
                     <div class="card-body p-5">
                         <div class="title-row flex flex-row justify-between">
                             <label for="global-strict-mode-checkbox" class="card-title">Global Strict Mode</label>
-                            <input id="global-strict-mode-checkbox" type="checkbox" class="toggle toggle-success"/>
+                            <input id="global-strict-mode-checkbox" type="checkbox" class="toggle toggle-success" aria-describedby="global-strict-mode-checkbox-description"/>
                         </div>
-                        <div class="font-body">
+                        <div id="global-strict-mode-checkbox-description" class="font-body">
                             Use SCION exclusively. Many sites will fail or only load partially.
                         </div>
                     </div>
@@ -132,9 +132,9 @@
                                     <h3>
                                         <label for="proxy-auto-configuration-checkbox" class="font-semibold">Auto Configuration</label>
                                     </h3>
-                                    <input type="checkbox" id="proxy-auto-configuration-checkbox" class="toggle toggle-success"/>
+                                    <input type="checkbox" id="proxy-auto-configuration-checkbox" class="toggle toggle-success" aria-describedby="proxy-auto-configuration-checkbox-description"/>
                                 </div>
-                                <div class="font-body">
+                                <div id="proxy-auto-configuration-checkbox-description" class="font-body">
                                     Use WPAD and defaults to automatically detect proxy settings.
                                 </div>
                             </div>

@@ -191,7 +191,7 @@ function updatePathUsageVisuals(pathUsage: PerDomainPathUsage) {
         const countryCode = getCountryCode(isd);
         return `
             <div class="flex flex-row space-x-2 items-center">
-                <img style="height: 25px" src=${getFlagPath(countryCode)} alt="Flag of ${getCountryName(countryCode)}"/>
+                <img style="height: 25px" src=${getFlagPath(countryCode)} alt="Icon of ${getCountryName(countryCode)}"/>
                 <p>(${countryCode})</p>
             </div>
         `
@@ -228,11 +228,11 @@ async function loadRequestInfo() {
     if (perSiteStrictMode[hostname]) {
         togglePerSiteMainDomain.innerHTML = hostname;
         togglePerSiteCheckbox.checked = true;
-        togglePerSiteMode.innerHTML = "Strict";
+        togglePerSiteMode.textContent = "Strict";
     } else if (mainDomainSCIONEnabled) {
         togglePerSiteMainDomain.innerHTML = hostname;
         togglePerSiteCheckbox.checked = false;
-        togglePerSiteMode.innerHTML = "When available";
+        togglePerSiteMode.textContent = "When available";
     } else {
         togglePerSiteContainer.style.display = "none";
     }// TODO: Else case would be no SCION... toggleRunning.checked = false;

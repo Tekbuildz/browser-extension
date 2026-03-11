@@ -37,10 +37,9 @@ async function updateSitePreferencesTable() {
                     <input id="${elementId}"
                            type="checkbox"
                            class="strict-mode-toggle toggle toggle-success" ${isStrict ? "checked" : ""}
-                           aria-describedby="${elementId}${isStrict ? "-strict" : "-when-available"}"/>
-                    <p class="ml-2 font-body cursor-pointer">
-                        <span id="${elementId}-when-available" class="label-available text-nowrap">When available</span>
-                        <span id="${elementId}-strict" class="label-strict">Strict</span>
+                           aria-describedby="${elementId}-description"/>
+                    <p id="${elementId}-description" class="ml-2 font-body text-nowrap">
+                        ${isStrict ? "Strict" : "When available"}
                     </p>
                 </div>
             </td>
@@ -71,7 +70,8 @@ async function sitePreferenceCheckboxOnClick(siteIndex: number) {
         return;
     }
 
-    checkbox.setAttribute("aria-describedby", checkbox.checked ? `${elementId}-strict` : `${elementId}-when-available`);
+    const descriptionElement = document.getElementById(`${elementId}-description`) as HTMLParagraphElement;
+    descriptionElement.textContent = checkbox.checked ? "Strict" : "When available";
 
     const site = Object.keys(PerSiteStrictMode)[siteIndex];
     PerSiteStrictMode[site] = checkbox.checked;
