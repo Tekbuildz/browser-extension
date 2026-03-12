@@ -13,11 +13,19 @@ body {
     );
 
     /* custom colors */
+    --new-success-color: oklch(0.705 0.22 156.53);
     --fallback-bc: oklch(27.8078% 0.029596 256.847952 /1);
     --tab-color: oklch(27.8078% 0.029596 256.847952 /1);
     --new-widget-bg: rgb(209 213 219);
     --new-widget-bg-secondary: rgb(229 231 235);
     --table-zebra-new-row-bg: rgb(209 213 219 / 0.25);
+}
+/* Overriding the success-color */
+body .alert-success{
+    --alert-bg: var(--new-success-color) !important;
+}
+body .badge-success{
+    background-color: var(--new-success-color) !important;
 }
 
 /* ===== POPUP ===== */
