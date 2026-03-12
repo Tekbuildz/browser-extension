@@ -370,5 +370,5 @@ async function togglePerSiteStrictModeOnClick() {
  * Opens the options page in a new tab.
  */
 async function openOptionsButtonOnClick() {
-    await chrome.tabs.create({'url': 'chrome://extensions/?options=' + chrome.runtime.id});
+    await chrome.runtime.openOptionsPage();
 }
