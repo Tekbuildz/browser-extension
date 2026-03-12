@@ -2,9 +2,9 @@
 'use strict';
 
 
-import {getSyncValue, getSyncValues, getTabResources, GLOBAL_STRICT_MODE, PER_SITE_STRICT_MODE, PROXY_HOST, PROXY_PORT, PROXY_SCHEME, saveSyncValue, type SyncValueSchema} from "../shared/storage.js";
-import {DEFAULT_PROXY_HOST, HTTPS_PROXY_PORT, HTTPS_PROXY_SCHEME, proxyHealthCheckPath, proxyPathUsagePath} from "../background_helpers/proxy_handler.js";
-import {safeHostname} from "../shared/utilities.js";
+import {getTabResources, PER_SITE_STRICT_MODE, saveSyncValue} from "../shared/storage.js";
+import {loadProxySettingsNoUpdate, proxyAddress, proxyHealthCheckPath, proxyPathUsagePath} from "../background_helpers/proxy_handler.js";
+import {GlobalStrictMode, initializeStrictModes, PerSiteStrictMode, safeHostname} from "../shared/utilities.js";
 import {getASName, getCountryCode, getCountryName, getFlagPath} from "./popup_helper.js";
 
 export type PerDomainPathUsage = { Domain: string, Path: string[], Strategy: string };
@@ -24,9 +24,6 @@ enum ProxyStatus {
     // Both the HTTPS and HTTP proxy failed
     Failed = 3,
 }
-
-const DEFAULT_PROXY_SCHEME = HTTPS_PROXY_SCHEME;
-const DEFAULT_PROXY_PORT = HTTPS_PROXY_PORT;
 
 const popupTitle = document.getElementById("popupTitle") as HTMLHeadingElement;
 const domainList = document.getElementById("domainlist") as HTMLDivElement;
@@ -52,34 +49,16 @@ const proxyStatusMessage = document.getElementById('proxyStatusMessage') as HTML
 const proxyHelpLink = document.getElementById('proxyHelpLink') as HTMLAnchorElement;
 const proxyDetailsContent = document.getElementById('proxyDetailsContent') as HTMLParagraphElement;
 
-let proxyAddress = `${DEFAULT_PROXY_SCHEME}://${DEFAULT_PROXY_HOST}:${DEFAULT_PROXY_PORT}`
-let perSiteStrictMode: SyncValueSchema[typeof PER_SITE_STRICT_MODE] = {};
-let globalStrictMode: SyncValueSchema[typeof GLOBAL_STRICT_MODE] = false;
 let popupMainDomain = "";
 
-// TODO: after rebase, replace this with a call to initializeStrictModes
-// initialization of the popup
-getSyncValue(PER_SITE_STRICT_MODE, {}).then(async (result) => {
-    perSiteStrictMode = result;
-    await loadRequestInfo();
-});
-getSyncValue(GLOBAL_STRICT_MODE, false).then(async (result) => {
-    globalStrictMode = result;
-})
 document.addEventListener("DOMContentLoaded", async () => {
     togglePerSiteCheckbox.addEventListener("click", togglePerSiteStrictModeOnClick);
     openOptionsButton.addEventListener("click", openOptionsButtonOnClick);
 
-    const result = await getSyncValues({
-        [PROXY_SCHEME]: DEFAULT_PROXY_SCHEME,
-        [PROXY_HOST]: DEFAULT_PROXY_HOST,
-        [PROXY_PORT]: DEFAULT_PROXY_PORT,
-    });
+    await initializeStrictModes();
+    await loadRequestInfo();
 
-    let proxyScheme = result[PROXY_SCHEME];
-    let proxyHost = result[PROXY_HOST];
-    let proxyPort = result[PROXY_PORT];
-    proxyAddress = `${proxyScheme}://${proxyHost}:${proxyPort}`;
+    await loadProxySettingsNoUpdate();
 
     checkProxyStatus();
 });
@@ -225,7 +204,7 @@ async function loadRequestInfo() {
     const resources = await getTabResources(activeTabId) ?? [];
     const mainDomainSCIONEnabled = resources.some(resource => resource[0] === hostname && resource[1]);
 
-    if (perSiteStrictMode[hostname]) {
+    if (PerSiteStrictMode[hostname]) {
         togglePerSiteMainDomain.innerHTML = hostname;
         togglePerSiteCheckbox.checked = true;
         togglePerSiteMode.textContent = "Strict";
@@ -268,7 +247,7 @@ async function loadRequestInfo() {
         `;
     }).join("");
 
-    if (perSiteStrictMode[hostname] || globalStrictMode) {
+    if (PerSiteStrictMode[hostname] || GlobalStrictMode) {
         if (mainDomainSCIONEnabled) {
             if (mixedContent) {
                 popupTitle.innerHTML = "Strict mode prevented some resources from loading";
@@ -294,7 +273,7 @@ async function loadRequestInfo() {
     await updatePathUsage();
 }
 
-const updatePathUsage = async () => {
+async function updatePathUsage() {
     console.log("get path usage")
     pathUsagePath.innerHTML = "";
 
@@ -343,14 +322,14 @@ const updatePathUsage = async () => {
         `;
         return;
     }
-};
+}
 
 /**
  * Toggles the per-site strict-mode value for the currently open site.
  */
 async function togglePerSiteStrictModeOnClick() {
     const newPerSiteStrictMode = {
-        ...perSiteStrictMode,
+        ...PerSiteStrictMode,
         [popupMainDomain]: togglePerSiteCheckbox.checked,
     };
 
@@ -363,7 +342,6 @@ async function togglePerSiteStrictModeOnClick() {
     }
 
     await saveSyncValue(PER_SITE_STRICT_MODE, newPerSiteStrictMode);
-    perSiteStrictMode = newPerSiteStrictMode;
 }
 
 /**
