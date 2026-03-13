@@ -33,8 +33,8 @@ export async function initializeResourceAndPathInformation(_hostname: string, re
         return;
     }
 
-    const mixedContent = await updateDomainList(resources);
-    updateResourcesLoadedTitle(mainDomainScionEnabled, mixedContent);
+    const allHostsScionCapable = await updateDomainList(resources);
+    updateResourcesLoadedTitle(mainDomainScionEnabled, allHostsScionCapable);
 
     // update path usage for current domain
     await updatePathUsage();
@@ -44,23 +44,23 @@ export async function initializeResourceAndPathInformation(_hostname: string, re
  * Updates the title that indicates the number of resources that were loaded/blocked
  * or loaded with/without SCION (depending on the site preference).
  */
-function updateResourcesLoadedTitle(mainDomainScionEnabled: boolean, mixedContent: boolean) {
+function updateResourcesLoadedTitle(mainDomainScionEnabled: boolean, allHostsScionCapable: boolean) {
     if (PerSiteStrictMode[hostname] || GlobalStrictMode) {
         if (mainDomainScionEnabled) {
-            if (mixedContent) {
-                resourcesLoadedTitle.innerHTML = "Strict mode prevented some resources from loading";
-            } else {
+            if (allHostsScionCapable) {
                 resourcesLoadedTitle.innerHTML = "All resources could be loaded";
+            } else {
+                resourcesLoadedTitle.innerHTML = "Strict mode prevented some resources from loading";
             }
         } else {
             resourcesLoadedTitle.innerHTML = "Strict mode blocked the page";
         }
     } else {
         if (mainDomainScionEnabled) {
-            if (mixedContent) {
-                resourcesLoadedTitle.innerHTML = "Not all resources loaded via SCION";
-            } else {
+            if (allHostsScionCapable) {
                 resourcesLoadedTitle.innerHTML = "All resources loaded via SCION";
+            } else {
+                resourcesLoadedTitle.innerHTML = "Not all resources loaded via SCION";
             }
         } else {
             resourcesLoadedTitle.innerHTML = "No resources loaded via SCION";
@@ -71,10 +71,10 @@ function updateResourcesLoadedTitle(mainDomainScionEnabled: boolean, mixedConten
 /**
  * Updates the list of domains of all resources that were loaded during fetching of the page.
  *
- * Returns true if **not** all hosts support SCION.
+ * Returns whether all hosts are SCION-capable.
  */
 async function updateDomainList(resources: [string, boolean][]) {
-    let mixedContent = false;
+    let allHostsScionCapable = true;
     domainList.innerHTML += resources.map(resource => {
         const domain = resource[0];
         const scionEnabled = resource[1];
@@ -92,7 +92,7 @@ async function updateDomainList(resources: [string, boolean][]) {
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
             `;
-            mixedContent = true;
+            allHostsScionCapable = false;
         }
 
         // adding a ':' before "allowed" and "blocked", such that the screen reader will enforce a pause between reading the domain name and the status
@@ -105,7 +105,7 @@ async function updateDomainList(resources: [string, boolean][]) {
         `;
     }).join("");
 
-    return mixedContent;
+    return allHostsScionCapable;
 }
 
 /**
