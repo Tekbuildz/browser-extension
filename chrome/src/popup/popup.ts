@@ -60,6 +60,12 @@ async function loadSiteInformation() {
         throw new Error(`[Popup]: activeTabId was undefined for page with hostname: ${hostname}`);
     }
 
-    resources = await getTabResources(activeTabId) ?? [];
+    // ensure that no fetches made by the options page (e.g. to determine proxy reachability) end up in the UI
+    if (activeTab.url.includes(chrome.runtime.getURL("src/options/options.html"))){
+        resources = [];
+    } else {
+        resources = await getTabResources(activeTabId) ?? [];
+    }
+
     mainDomainScionEnabled = resources.some(resource => resource[0] === hostname && resource[1]);
 }
