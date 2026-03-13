@@ -84,7 +84,6 @@ async function proxySaveSettingsButtonOnClick() {
         [PROXY_PORT]: port,
     });
 
-    // TODO: verify that this aligns with accessibility requirements, otherwise consider e.g. an alert-message (surely that one is at least AA-level?)
     // display confirmation message
     const originalText = proxySaveSettingsButton.textContent;
     proxySaveSettingsButton.textContent = "Settings Saved!";
