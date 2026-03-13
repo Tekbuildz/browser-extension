@@ -1,4 +1,4 @@
-import type {PerDomainPathUsage} from "./popup.js";
+export type PerDomainPathUsage = { Domain: string, Path: string[], Strategy: string };
 
 export function humanFileSize(bytes: number, si = false, dp = 1) {
     const thresh = si ? 1000 : 1024;
