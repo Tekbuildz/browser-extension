@@ -158,7 +158,7 @@ async function updatePathUsage() {
     });
 
     if (pathUsagePath.innerHTML === "") {
-        showNoPathUsageAvailableMessage(`No path usage data available for ${hostname || "current domain"}`);
+        showNoPathUsageAvailableMessage("No path usage data available for current domain");
     }
 }
 
