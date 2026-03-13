@@ -39,6 +39,12 @@ const pathUsageSite = document.getElementById("pathUsageSite") as HTMLSpanElemen
 const pathUsageStrategy = document.getElementById("pathUsageStrategy") as HTMLSpanElement;
 const pathUsageISDs = document.getElementById("pathUsageISDs") as HTMLDivElement;
 const pathUsagePath = document.getElementById("pathUsagePath") as HTMLDivElement;
+const noPathUsageAvailableContainer = document.getElementById("no-path-usage-available-container") as HTMLDivElement;
+const pathUsageContainer = document.getElementById("path-usage-container") as HTMLDivElement;
+const noPathUsageAvailable = document.getElementById("no-path-usage-available") as HTMLParagraphElement;
+
+const websiteInformationContainer = document.getElementById("website-information-container") as HTMLDivElement;
+const noWebsiteInformationContainer = document.getElementById("no-website-information-container") as HTMLDivElement;
 
 // open options/preferences
 const openOptionsButton = document.getElementById("openOptionsButton") as HTMLButtonElement;
@@ -55,24 +61,26 @@ document.addEventListener("DOMContentLoaded", async () => {
     togglePerSiteCheckbox.addEventListener("click", togglePerSiteStrictModeOnClick);
     openOptionsButton.addEventListener("click", openOptionsButtonOnClick);
 
+    // initialize values/variables required for the popup
     await initializeStrictModes();
-    await loadRequestInfo();
-
     await loadProxySettingsNoUpdate();
 
-    checkProxyStatus();
+    // populate popup with data
+    await loadRequestInfo();
+    await checkProxyStatus();
 });
 
 /**
  * Checks the current reachability of the proxy and updates the visuals via {@link updateProxyStatusVisuals} accordingly.
  */
-function checkProxyStatus() {
+async function checkProxyStatus() {
     updateProxyStatusVisuals(ProxyStatus.Undetermined);
 
-    fetch(`${proxyAddress}${proxyHealthCheckPath}`, {
-        method: "GET",
-        signal: AbortSignal.timeout(2000)
-    }).then(response => {
+    try {
+        const response = await fetch(`${proxyAddress}${proxyHealthCheckPath}`, {
+            method: "GET",
+            signal: AbortSignal.timeout(2000)
+        });
         if (response.status === 200) {
             if (proxyAddress.startsWith('https://')) {
                 updateProxyStatusVisuals(ProxyStatus.HTTPS);
@@ -86,12 +94,12 @@ function checkProxyStatus() {
             // Show error message for non-200 responses
             console.warn("Proxy check failed:", response.status);
         }
-    }).catch(error => {
+    } catch (error) {
         updateProxyStatusVisuals(ProxyStatus.Failed);
 
         // Handle network errors or timeouts
         console.warn("Proxy check failed:", error);
-    });
+    }
 }
 
 /**
@@ -202,6 +210,13 @@ async function loadRequestInfo() {
     }
 
     const resources = await getTabResources(activeTabId) ?? [];
+    if (resources.length === 0) {
+        togglePerSiteContainer.style.display = "none";
+        websiteInformationContainer.classList.add("hidden");
+        noWebsiteInformationContainer.classList.remove("hidden");
+        return;
+    }
+
     const mainDomainSCIONEnabled = resources.some(resource => resource[0] === hostname && resource[1]);
 
     if (PerSiteStrictMode[hostname]) {
@@ -213,8 +228,9 @@ async function loadRequestInfo() {
         togglePerSiteCheckbox.checked = false;
         togglePerSiteMode.textContent = "When available";
     } else {
+        // page is not scion-capable, can therefore not be set to strict
         togglePerSiteContainer.style.display = "none";
-    }// TODO: Else case would be no SCION... toggleRunning.checked = false;
+    }
 
     let mixedContent = false
     domainList.innerHTML += resources.map(resource => {
@@ -284,10 +300,7 @@ async function updatePathUsage() {
     const json = res as ProxyPathUsageResponse;
     console.log(json)
     if (!json || json.length === 0) {
-        pathUsagePath.innerHTML = `
-            <p>No path usage data available</p>
-            <p>Try to configure your own policies to have access to path usage data (under <i>Manage Preferences</i>).</p>
-        `;
+        showNoPathUsageAvailableMessage("No path usage data available");
         return;
     }
 
@@ -300,28 +313,17 @@ async function updatePathUsage() {
     });
 
     if (pathUsagePath.innerHTML === "") {
-        /*
-        TODO: instead of setting this info here, set it directly when expanding the "Path", specifically:
-
-        Instead of:
-        Path Usage
-        | Info (empty)
-        | Path (text here)
-
-        probably better do:
-        Path Usage
-        | (text here)
-
-        or alternatively:
-        (text here)
-        Path Usage (display:none)
-         */
-        pathUsagePath.innerHTML = `
-            <p>No path usage data available for ${popupMainDomain || "current domain"}</p>
-            <p>Try to configure your own policies to have acces to path usage data (under <i>Manage Preferences</i>).</p>
-        `;
-        return;
+        showNoPathUsageAvailableMessage(`No path usage data available for ${popupMainDomain || "current domain"}`);
     }
+}
+
+/**
+ * Reveals a text that informs the user that no path usage is available (exact text is specified by {@link message}).
+ */
+function showNoPathUsageAvailableMessage(message: string) {
+    pathUsageContainer.classList.add("hidden");
+    noPathUsageAvailableContainer.classList.remove("hidden");
+    noPathUsageAvailable.textContent = message;
 }
 
 /**
