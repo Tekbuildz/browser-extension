@@ -93,10 +93,11 @@ export async function addOrUpdateRequestInDB(entry: RequestSchema): Promise<void
         lastAccessed: now(),
     };
 
-    store.put(newEntry);
+    const addOrUpdateRequest = store.put(newEntry);
+    await requestToPromise(addOrUpdateRequest);
 
     const count = await getEntryCount(store);
-    if (count + 1 > MAX_ENTRIES) {
+    if (count > MAX_ENTRIES) {
         await evictLRU(store, EVICT_COUNT);
     }
 
@@ -266,11 +267,8 @@ async function evictLRU(store: IDBObjectStore, count: number): Promise<void> {
  * here.
  */
 async function getEntryCount(store: IDBObjectStore): Promise<number> {
-    const request = store.count();
-    return await new Promise((resolve, reject) => {
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
-    });
+    const countRequest = store.count();
+    return await requestToPromise(countRequest);
 }
 
 /**
@@ -292,5 +290,18 @@ function transactionDone(transaction: IDBTransaction): Promise<void> {
         transaction.oncomplete = () => resolve();
         transaction.onerror = () => reject(transaction.error);
         transaction.onabort = () => reject(transaction.error);
+    });
+}
+
+/**
+ * Converts an {@link IDBRequest} into an await-able {@link Promise}.
+ * @example
+ * const request = store.put(entry);
+ * await requestToPromise(request);
+ */
+function requestToPromise<T>(request: IDBRequest<T>): Promise<T> {
+    return new Promise((resolve, reject) => {
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
     });
 }
