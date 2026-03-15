@@ -46,31 +46,14 @@ export async function getRequestsInDB(): Promise<RequestSchema[]> {
 
     const transaction = db.transaction(STORE_ENTRIES, "readonly");
     const store = transaction.objectStore(STORE_ENTRIES);
-    const req = store.openCursor();
-
-    const result: RequestSchema[] = [];
-
-    await new Promise<void>((resolve, reject) => {
-        req.onsuccess = () => {
-            const cursor = req.result;
-            if (!cursor) {
-                resolve();
-                return;
-            }
-
-            const entry = cursor.value as RequestEntryInternal;
-            result.push({
-                [DOMAIN]: entry.domain,
-                [MAIN_DOMAIN]: entry.mainDomain,
-                [SCION_ENABLED]: entry.scionEnabled,
-            });
-
-            cursor.continue();
-        };
-        req.onerror = () => reject(req.error);
+    const internalResult = await requestToPromise(store.getAll()) as RequestEntryInternal[];
+    return internalResult.map(internal => {
+        return {
+            [DOMAIN]: internal.domain,
+            [MAIN_DOMAIN]: internal.mainDomain,
+            [SCION_ENABLED]: internal.scionEnabled,
+        } as RequestSchema;
     });
-
-    return result;
 }
 
 /**
