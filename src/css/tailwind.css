@@ -19,6 +19,8 @@ body {
     --new-widget-bg: rgb(209 213 219);
     --new-widget-bg-secondary: rgb(229 231 235);
     --table-zebra-new-row-bg: rgb(209 213 219 / 0.25);
+    --new-disabled-foreground: var(--fallback-bc);
+    --new-disabled-opacity: 0.7;
 }
 /* Overriding the success-color */
 body .alert-success{
@@ -84,4 +86,14 @@ body .badge-success{
 
 .strict-mode-toggle ~ label {
     min-width: 90px;
+}
+
+/* overriding the disabled color and opacity, such that both selects and inputs look equal */
+select.select:disabled {
+    color: var(--new-disabled-foreground);
+    opacity: var(--new-disabled-opacity);
+}
+input.input:disabled {
+    color: var(--new-disabled-foreground);
+    opacity: var(--new-disabled-opacity);
 }
