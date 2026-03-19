@@ -1,5 +1,5 @@
 import {proxyAddress, proxyPathUsagePath} from "../background_helpers/proxy_handler.js";
-import {getASName, getCountryCode, getCountryName, getFlagPath, type PerDomainPathUsage} from "./popup_helper.js";
+import {CountryCode, getASName, getCountryCode, getCountryName, getFlagPath, type PerDomainPathUsage} from "./popup_helper.js";
 import {GlobalStrictMode, PerSiteStrictMode} from "../shared/utilities.js";
 
 // types
@@ -20,6 +20,8 @@ const pathUsagePath = document.getElementById("path-usage-path") as HTMLDivEleme
 const noPathUsageAvailableContainer = document.getElementById("no-path-usage-available-container") as HTMLDivElement;
 const pathUsageContainer = document.getElementById("path-usage-container") as HTMLDivElement;
 const noPathUsageAvailable = document.getElementById("no-path-usage-available") as HTMLParagraphElement;
+// world map
+const worldMapContainer = document.getElementById("world-map-container") as HTMLDivElement;
 
 let hostname = "";
 
@@ -111,17 +113,17 @@ async function updateDomainList(resources: [string, boolean][]) {
 /**
  * Updates the information displayed in the path-menu.
  */
-function updatePathUsageVisuals(pathUsage: PerDomainPathUsage) {
+async function updatePathUsageVisuals(pathUsage: PerDomainPathUsage) {
     console.log("path usage: ", pathUsage);
-    const isds: Set<number> = new Set(pathUsage.Path.map((v: string) => {
+    const isdNumbers: Set<number> = new Set(pathUsage.Path.map((v: string) => {
         const isd: string = v.split("-")[0];
         return Number.parseInt(isd);
     }));
+    const countryCodes = [...isdNumbers].map((isd: number) => getCountryCode(isd));
 
     pathUsageSite.textContent = pathUsage.Domain;
     pathUsageStrategy.textContent = pathUsage.Strategy;
-    pathUsageISDs.innerHTML = [...isds].map((isd: number) => {
-        const countryCode = getCountryCode(isd);
+    pathUsageISDs.innerHTML = countryCodes.map((countryCode: CountryCode) => {
         return `
             <div class="flex flex-row space-x-2 items-center">
                 <img style="height: 25px" src=${getFlagPath(countryCode)} alt="Icon of ${getCountryName(countryCode)}"/>
@@ -132,6 +134,8 @@ function updatePathUsageVisuals(pathUsage: PerDomainPathUsage) {
     pathUsagePath.innerHTML = pathUsage.Path.map(ia => `
         <p>${ia} (${getASName(ia.split("-")[1])})</p>
     `).join("");
+
+    await updateWorldMap(countryCodes);
 }
 
 async function updatePathUsage() {
@@ -149,13 +153,13 @@ async function updatePathUsage() {
         return;
     }
 
-    json.forEach((pathUsage: PerDomainPathUsage) => {
+    for (const pathUsage of json) {
         console.log(pathUsage.Domain.split(":")[0])
         // we only expect one match
         if (hostname && pathUsage.Domain.split(":")[0] === hostname) {
-            updatePathUsageVisuals(pathUsage);
+            await updatePathUsageVisuals(pathUsage);
         }
-    });
+    }
 
     if (pathUsagePath.innerHTML === "") {
         showNoPathUsageAvailableMessage("No path usage data available for current domain");
@@ -169,4 +173,20 @@ function showNoPathUsageAvailableMessage(message: string) {
     pathUsageContainer.classList.add("hidden");
     noPathUsageAvailableContainer.classList.remove("hidden");
     noPathUsageAvailable.textContent = message;
+}
+
+// ====================
+// World Map
+// ====================
+async function updateWorldMap(countryCodes: CountryCode[]) {
+    console.log("[updateWorldMap]: Highlighting countries with codes: ", countryCodes);
+    const response = await fetch("../../images/world.svg");
+    worldMapContainer.innerHTML = await response.text();
+
+    for (const countryCode of countryCodes) {
+        const pathElements = document.getElementsByClassName(countryCode);
+        for (const pathElement of pathElements) {
+            pathElement.classList.add("highlight");
+        }
+    }
 }

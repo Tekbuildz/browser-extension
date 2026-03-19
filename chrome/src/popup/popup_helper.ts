@@ -47,18 +47,18 @@ export function getFlagPath(countryCode: CountryCode) {
     return basePath + imageNameMap[countryCode];
 }
 
-enum CountryCode {
-    EU = "EU",
+export enum CountryCode {
+    EuropeanUnion = "EuropeanUnion",
     CH = "CH",
-    AWS = "AWS",
+    AmazonWebServices = "AmazonWebServices",
     US = "US",
     JP = "JP",
     TW = "TW",
     CN = "CN",
     KR = "KR",
     KREONET = "KREONET",
-    AS = "AS",
-    NA = "NA",
+    Asia = "Asia",
+    NorthAmerica = "NorthAmerica",
     SSFN = "SSFN",
     SCIERA = "SCIERA",
     HVR = "HVR",
@@ -67,9 +67,9 @@ enum CountryCode {
 }
 const isdMap: Record<number, CountryCode> = {
     // Assignments used by SCIONLab
-    19: CountryCode.EU,
+    19: CountryCode.EuropeanUnion,
     17: CountryCode.CH,
-    16: CountryCode.AWS,
+    16: CountryCode.AmazonWebServices,
     18: CountryCode.US,
     21: CountryCode.JP,
     22: CountryCode.TW,
@@ -78,9 +78,9 @@ const isdMap: Record<number, CountryCode> = {
     26: CountryCode.KREONET,
     // Assignments used by the production network
     64: CountryCode.CH,
-    65: CountryCode.EU,
-    66: CountryCode.AS,
-    67: CountryCode.NA,
+    65: CountryCode.EuropeanUnion,
+    66: CountryCode.Asia,
+    67: CountryCode.NorthAmerica,
     68: CountryCode.RESERVED,
     69: CountryCode.RESERVED,
     70: CountryCode.SSFN,
@@ -88,17 +88,17 @@ const isdMap: Record<number, CountryCode> = {
     72: CountryCode.HVR,
 }
 const imageNameMap: Record<CountryCode, string> = {
-    [CountryCode.EU]: "european-union.png",
+    [CountryCode.EuropeanUnion]: "european-union.png",
     [CountryCode.CH]: "switzerland.png",
-    [CountryCode.AWS]: "amazon.png",
+    [CountryCode.AmazonWebServices]: "amazon.png",
     [CountryCode.US]: "united-states.png",
     [CountryCode.JP]: "japan.png",
     [CountryCode.TW]: "taiwan.png",
     [CountryCode.CN]: "china.png",
     [CountryCode.KR]: "south-korea.png",
     [CountryCode.KREONET]: "south-korea.png",
-    [CountryCode.AS]: "asia.png",
-    [CountryCode.NA]: "north-america.png",
+    [CountryCode.Asia]: "asia.png",
+    [CountryCode.NorthAmerica]: "north-america.png",
     [CountryCode.SSFN]: "switzerland.png",
     [CountryCode.SCIERA]: "scion-0.png",
     [CountryCode.HVR]: "hin.png",
@@ -106,17 +106,17 @@ const imageNameMap: Record<CountryCode, string> = {
     [CountryCode.UNKNOWN]: "unknown.png",
 }
 const countryMap: Record<CountryCode, string> = {
-    [CountryCode.EU]: "European Union",
+    [CountryCode.EuropeanUnion]: "European Union",
     [CountryCode.CH]: "Switzerland",
-    [CountryCode.AWS]: "Amazon",
+    [CountryCode.AmazonWebServices]: "Amazon",
     [CountryCode.US]: "United States",
     [CountryCode.JP]: "Japan",
     [CountryCode.TW]: "Taiwan",
     [CountryCode.CN]: "China",
     [CountryCode.KR]: "South Korea",
     [CountryCode.KREONET]: "South Korea",
-    [CountryCode.AS]: "Asia",
-    [CountryCode.NA]: "North America",
+    [CountryCode.Asia]: "Asia",
+    [CountryCode.NorthAmerica]: "North America",
     [CountryCode.SSFN]: "Switzerland",
     [CountryCode.SCIERA]: "SCIERA",
     [CountryCode.HVR]: "Health Info Net (HIN)",
