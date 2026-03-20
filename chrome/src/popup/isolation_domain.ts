@@ -10,29 +10,17 @@ export enum IsolationDomain {
     KREONET = "KREONET",
     Asia = "Asia",
     NorthAmerica = "NorthAmerica",
-    /**
-     * Secure Swiss Finance Network.
-     */
+    /** Secure Swiss Finance Network */
     SSFN = "SSFN",
-    /**
-     * SCIon Educational Research, and Academic infrastructure.
-     */
+    /** SCION Educational Research, and Academic infrastructure */
     SCIERA = "SCIERA",
-    /**
-     * Secure Swiss Health Network (formerly known as HVR).
-     */
+    /** Secure Swiss Health Network (formerly known as HVR) */
     SSHN = "SSHN",
-    /**
-     * Secure EFTPOS Network.
-     */
+    /** Secure EFTPOS Network */
     SEPN = "SEPN",
-    /**
-     * Benelux ISD - Encompasses Belgium, Netherlands, Luxembourg.
-     */
+    /** Benelux ISD - Encompasses Belgium, Netherlands, Luxembourg */
     Benelux = "Benelux",
-    /**
-     * Secure Swiss Utility Network.
-     */
+    /** Secure Swiss Utility Network */
     SSUN = "SSUN",
     DEPRECATED = "DEPRECATED",
     RESERVED = "RESERVED",

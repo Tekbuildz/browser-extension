@@ -2,6 +2,7 @@ import {proxyAddress, proxyPathUsagePath} from "../background_helpers/proxy_hand
 import {getASName, getCountryCode, getCountryName, getFlagPath, type PerDomainPathUsage} from "./popup_helper.js";
 import {GlobalStrictMode, PerSiteStrictMode} from "../shared/utilities.js";
 import type {IsolationDomain} from "./isolation_domain.js";
+import {toAutonomousSystem} from "./autonomous_system_utils.js";
 
 // types
 type ProxyPathUsageResponse = PerDomainPathUsage[];
@@ -132,9 +133,10 @@ async function updatePathUsageVisuals(pathUsage: PerDomainPathUsage) {
             </div>
         `
     }).join("");
-    pathUsagePath.innerHTML = pathUsage.Path.map(ia => `
-        <p>${ia} (${getASName(ia.split("-")[1])})</p>
-    `).join("");
+    pathUsagePath.innerHTML = pathUsage.Path.map(ia => {
+        const autonomousSystem = toAutonomousSystem(ia.split("-")[1]);
+        return `<p>${ia} (${getASName(autonomousSystem)})</p>`
+    }).join("");
 
     await updateWorldMap(countryCodes);
 }
