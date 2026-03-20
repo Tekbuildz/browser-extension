@@ -1,6 +1,7 @@
 import {proxyAddress, proxyPathUsagePath} from "../background_helpers/proxy_handler.js";
-import {CountryCode, getASName, getCountryCode, getCountryName, getFlagPath, type PerDomainPathUsage} from "./popup_helper.js";
+import {getASName, getCountryCode, getCountryName, getFlagPath, type PerDomainPathUsage} from "./popup_helper.js";
 import {GlobalStrictMode, PerSiteStrictMode} from "../shared/utilities.js";
+import type {IsolationDomain} from "./isolation_domain.js";
 
 // types
 type ProxyPathUsageResponse = PerDomainPathUsage[];
@@ -123,7 +124,7 @@ async function updatePathUsageVisuals(pathUsage: PerDomainPathUsage) {
 
     pathUsageSite.textContent = pathUsage.Domain;
     pathUsageStrategy.textContent = pathUsage.Strategy;
-    pathUsageISDs.innerHTML = countryCodes.map((countryCode: CountryCode) => {
+    pathUsageISDs.innerHTML = countryCodes.map((countryCode: IsolationDomain) => {
         return `
             <div class="flex flex-row space-x-2 items-center">
                 <img style="height: 25px" src=${getFlagPath(countryCode)} alt="Icon of ${getCountryName(countryCode)}"/>
@@ -178,7 +179,7 @@ function showNoPathUsageAvailableMessage(message: string) {
 // ====================
 // World Map
 // ====================
-async function updateWorldMap(countryCodes: CountryCode[]) {
+async function updateWorldMap(countryCodes: IsolationDomain[]) {
     console.log("[updateWorldMap]: Highlighting countries with codes: ", countryCodes);
     const response = await fetch("../../images/world.svg");
     worldMapContainer.innerHTML = await response.text();
