@@ -79,6 +79,7 @@ def generate_ts_snippet(country_code_map):
         # adding a comment to display the country's name that the code represents
         ts_content += f"\t/** {country_name} */\n"
         ts_content += f"\t{country_code} = \"{country_code}\",\n"
+    ts_content += "\tUNKNOWN = \"UNKNOWN\",\n"
     ts_content += "}\n"
 
     return ts_content
