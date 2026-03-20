@@ -21,7 +21,3 @@ export function humanFileSize(bytes: number, si = false, dp = 1) {
 
     return bytes.toFixed(dp) + ' ' + units[u];
 }
-
-export function getASesFromPathUsage(pathUsage: PerDomainPathUsage) {
-    return new Set(pathUsage.Path.map(v => v.split("-")[1]));
-}

@@ -506,4 +506,5 @@ export enum CountryCode {
 	/** Zimbabwe */
 	ZW = "ZW",
 	UNKNOWN = "UNKNOWN",
+    TO_BE_DETERMINED = "UNKNOWN",
 }
