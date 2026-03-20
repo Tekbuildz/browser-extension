@@ -2,8 +2,9 @@ import {proxyAddress, proxyPathUsagePath} from "../background_helpers/proxy_hand
 import {type PerDomainPathUsage} from "./popup_helper.js";
 import {GlobalStrictMode, PerSiteStrictMode} from "../shared/utilities.js";
 import type {IsolationDomain} from "./isolation_domain.js";
-import {getASName, toAutonomousSystem} from "./autonomous_system_utils.js";
+import {asCountryMap, getASName, toAutonomousSystem} from "./autonomous_system_utils.js";
 import {getISDName, getISDCountryFlagPath, toIsolationDomain} from "./isolation_domain_utils.js";
+import type {AutonomousSystem} from "./autonomous_system.js";
 
 // types
 type ProxyPathUsageResponse = PerDomainPathUsage[];
@@ -123,6 +124,7 @@ async function updatePathUsageVisuals(pathUsage: PerDomainPathUsage) {
         return Number.parseInt(isd);
     }));
     const isolationDomains = [...isdNumbers].map((isd: number) => toIsolationDomain(isd));
+    const autonomousSystems = pathUsage.Path.map(v => toAutonomousSystem(v.split("-")[1]));
 
     pathUsageSite.textContent = pathUsage.Domain;
     pathUsageStrategy.textContent = pathUsage.Strategy;
@@ -134,12 +136,10 @@ async function updatePathUsageVisuals(pathUsage: PerDomainPathUsage) {
             </div>
         `
     }).join("");
-    pathUsagePath.innerHTML = pathUsage.Path.map(ia => {
-        const as = toAutonomousSystem(ia.split("-")[1]);
-        return `<p>${ia} (${getASName(as)})</p>`
-    }).join("");
+    pathUsagePath.innerHTML = autonomousSystems.map(as => `<p>${as} (${getASName(as)})</p>`).join("");
 
-    await updateWorldMap(isolationDomains);
+    const autonomousSystemsNoDuplicates = new Set(autonomousSystems);
+    await updateWorldMap([...autonomousSystemsNoDuplicates]);
 }
 
 async function updatePathUsage() {
@@ -182,8 +182,10 @@ function showNoPathUsageAvailableMessage(message: string) {
 // ====================
 // World Map
 // ====================
-async function updateWorldMap(countryCodes: IsolationDomain[]) {
+async function updateWorldMap(autonomousSystems: AutonomousSystem[]) {
+    const countryCodes = autonomousSystems.map(as => asCountryMap[as]);
     console.log("[updateWorldMap]: Highlighting countries with codes: ", countryCodes);
+
     const response = await fetch("../../images/world.svg");
     worldMapContainer.innerHTML = await response.text();
 
