@@ -21,18 +21,9 @@ def download_webpage(url):
 
 def parse_as_data(html_content):
     soup = BeautifulSoup(html_content, 'html.parser')
-    
-    as_section = None
-    for h2 in soup.find_all('h2'):
-        if 'Autonomous Systems' in h2.get_text():
-            as_section = h2
-            break
-    
-    if not as_section:
-        print("Could not find 'Autonomous Systems' section")
-        sys.exit(1)
-    
-    table = as_section.find_next('table', class_='docutils align-default')
+
+    table = soup.find('table')
+
     if not table:
         print("Could not find AS table")
         sys.exit(1)
@@ -44,17 +35,13 @@ def parse_as_data(html_content):
             cells = row.find_all('td')
             if len(cells) >= 2:
                 # Extract AS number from first cell
-                as_number_elem = cells[0].find('p')
-                if as_number_elem:
-                    as_number = as_number_elem.get_text().strip()
-                    
-                    # Extract organization name from second cell
-                    org_name_elem = cells[1].find('p')
-                    if org_name_elem:
-                        org_name = org_name_elem.get_text().strip()
-                        
-                        if as_number and org_name:
-                            as_map[as_number] = org_name
+                as_number = cells[0].get_text().strip()
+
+                # Extract organization name from second cell
+                org_name = cells[1].get_text().strip()
+
+                if as_number and org_name:
+                    as_map[as_number] = org_name
     
     return as_map
 
@@ -75,7 +62,7 @@ def generate_js_snippet(as_map):
     return js_content
 
 def main():
-    url = "https://docs.anapaya.net/en/latest/resources/isd-as-assignments/"
+    url = "https://learn.anapaya.net/docs/resources/assignments/ases/"
     
     print(f"Downloading webpage from: {url}")
     html_content = download_webpage(url)
