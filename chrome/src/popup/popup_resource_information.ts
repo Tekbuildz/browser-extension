@@ -1,8 +1,9 @@
 import {proxyAddress, proxyPathUsagePath} from "../background_helpers/proxy_handler.js";
-import {getASName, getCountryCode, getCountryName, getFlagPath, type PerDomainPathUsage} from "./popup_helper.js";
+import {type PerDomainPathUsage} from "./popup_helper.js";
 import {GlobalStrictMode, PerSiteStrictMode} from "../shared/utilities.js";
 import type {IsolationDomain} from "./isolation_domain.js";
-import {toAutonomousSystem} from "./autonomous_system_utils.js";
+import {getASName, toAutonomousSystem} from "./autonomous_system_utils.js";
+import {getISDName, getISDCountryFlagPath, toIsolationDomain} from "./isolation_domain_utils.js";
 
 // types
 type ProxyPathUsageResponse = PerDomainPathUsage[];
@@ -121,24 +122,24 @@ async function updatePathUsageVisuals(pathUsage: PerDomainPathUsage) {
         const isd: string = v.split("-")[0];
         return Number.parseInt(isd);
     }));
-    const countryCodes = [...isdNumbers].map((isd: number) => getCountryCode(isd));
+    const isolationDomains = [...isdNumbers].map((isd: number) => toIsolationDomain(isd));
 
     pathUsageSite.textContent = pathUsage.Domain;
     pathUsageStrategy.textContent = pathUsage.Strategy;
-    pathUsageISDs.innerHTML = countryCodes.map((countryCode: IsolationDomain) => {
+    pathUsageISDs.innerHTML = isolationDomains.map((isolationDomain: IsolationDomain) => {
         return `
             <div class="flex flex-row space-x-2 items-center">
-                <img style="height: 25px" src=${getFlagPath(countryCode)} alt="Icon of ${getCountryName(countryCode)}"/>
-                <p>(${countryCode})</p>
+                <img style="height: 25px" src=${getISDCountryFlagPath(isolationDomain)} alt="Icon of ${getISDName(isolationDomain)}"/>
+                <p>(${isolationDomain})</p>
             </div>
         `
     }).join("");
     pathUsagePath.innerHTML = pathUsage.Path.map(ia => {
-        const autonomousSystem = toAutonomousSystem(ia.split("-")[1]);
-        return `<p>${ia} (${getASName(autonomousSystem)})</p>`
+        const as = toAutonomousSystem(ia.split("-")[1]);
+        return `<p>${ia} (${getASName(as)})</p>`
     }).join("");
 
-    await updateWorldMap(countryCodes);
+    await updateWorldMap(isolationDomains);
 }
 
 async function updatePathUsage() {

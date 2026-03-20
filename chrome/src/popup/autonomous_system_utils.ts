@@ -1,4 +1,11 @@
-import {AutonomousSystem} from "./autonomous_system.js";
+import {asNameMap, AutonomousSystem} from "./autonomous_system.js";
+
+/**
+ * Returns the name of the AS specified by {@link as}.
+ */
+export function getASName(as: AutonomousSystem) {
+    return asNameMap[as];
+}
 
 /**
  * Converts a string into its corresponding {@link AutonomousSystem} enum entry representation.
