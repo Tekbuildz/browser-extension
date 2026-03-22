@@ -2,8 +2,9 @@ import {proxyAddress, proxyPathUsagePath} from "../background_helpers/proxy_hand
 import {GlobalStrictMode, PerSiteStrictMode} from "../shared/utilities.js";
 import type {IsolationDomain} from "./isolation_domain.js";
 import {asCountryMap, getASName, toAutonomousSystem} from "./autonomous_system_utils.js";
-import {getISDName, getISDCountryFlagPath, toIsolationDomain} from "./isolation_domain_utils.js";
+import {getISDCountryFlagPath, getISDName, toIsolationDomain} from "./isolation_domain_utils.js";
 import type {AutonomousSystem} from "./autonomous_system.js";
+import {CountryCode} from "./country_code.js";
 
 // types
 type PerDomainPathUsage = { Domain: string, Path: string[], Strategy: string };
@@ -25,6 +26,7 @@ const noPathUsageAvailableContainer = document.getElementById("no-path-usage-ava
 const pathUsageContainer = document.getElementById("path-usage-container") as HTMLDivElement;
 const noPathUsageAvailable = document.getElementById("no-path-usage-available") as HTMLParagraphElement;
 // world map
+const worldMapLink = document.getElementById("world-map-link") as HTMLAnchorElement;
 const worldMapContainer = document.getElementById("world-map-container") as HTMLDivElement;
 
 let hostname = "";
@@ -184,12 +186,26 @@ function showNoPathUsageAvailableMessage(message: string) {
 // ====================
 async function updateWorldMap(autonomousSystems: AutonomousSystem[]) {
     const countryCodes = autonomousSystems.map(as => asCountryMap[as]);
-    console.log("[updateWorldMap]: Highlighting countries with codes: ", countryCodes);
+    console.log("[updateWorldMap]: (Possibly unknown) countries found on path: ", countryCodes);
+
+    // purging any duplicate or unknown countries, such that they don't appear in the URL
+    const countryCodeSet = new Set(countryCodes);
+    countryCodeSet.delete(CountryCode.UNKNOWN);
+    countryCodeSet.delete(CountryCode.TO_BE_DETERMINED);
+    const countryCodesNoDuplicates = [...countryCodeSet];
+    console.log("[updateWorldMap]: Highlighting countries with codes: ", countryCodesNoDuplicates);
+
+    // initializing the world-map-link
+    const countryCodesAsString = countryCodesNoDuplicates.join("-");
+    const url = chrome.runtime.getURL(`src/world_map/world_map.html#${countryCodesAsString}`);
+    worldMapLink.addEventListener("click", async () => {
+        await chrome.tabs.create({'url': url});
+    });
 
     const response = await fetch("../../images/world.svg");
     worldMapContainer.innerHTML = await response.text();
 
-    for (const countryCode of countryCodes) {
+    for (const countryCode of countryCodesNoDuplicates) {
         const pathElements = document.getElementsByClassName(countryCode);
         for (const pathElement of pathElements) {
             pathElement.classList.add("highlight");
