@@ -1,5 +1,4 @@
 import {proxyAddress, proxyPathUsagePath} from "../background_helpers/proxy_handler.js";
-import {type PerDomainPathUsage} from "./popup_helper.js";
 import {GlobalStrictMode, PerSiteStrictMode} from "../shared/utilities.js";
 import type {IsolationDomain} from "./isolation_domain.js";
 import {asCountryMap, getASName, toAutonomousSystem} from "./autonomous_system_utils.js";
@@ -7,6 +6,7 @@ import {getISDName, getISDCountryFlagPath, toIsolationDomain} from "./isolation_
 import type {AutonomousSystem} from "./autonomous_system.js";
 
 // types
+type PerDomainPathUsage = { Domain: string, Path: string[], Strategy: string };
 type ProxyPathUsageResponse = PerDomainPathUsage[];
 
 // references to containers to inform the user if no information is available
