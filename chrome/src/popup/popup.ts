@@ -7,6 +7,7 @@ import {loadProxySettingsNoUpdate} from "../background_helpers/proxy_handler.js"
 import {initializeStrictModes, safeHostname} from "../shared/utilities.js";
 import {initializeConfiguration} from "./popup_configuration.js";
 import {initializeResourceAndPathInformation} from "./popup_resource_information.js";
+import {initializeCountryLookup} from "./country_code_utils.js";
 
 type Tab = chrome.tabs.Tab;
 
@@ -28,6 +29,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     // initialize UI, populate the popup with data
+    await initializeCountryLookup();
     await initializeConfiguration(hostname, resources, mainDomainScionEnabled);
     await initializeResourceAndPathInformation(hostname, resources, mainDomainScionEnabled);
 });

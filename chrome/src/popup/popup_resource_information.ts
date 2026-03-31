@@ -187,10 +187,7 @@ function showNoPathUsageAvailableMessage(message: string) {
 // ====================
 async function updateWorldMap(autonomousSystems: AutonomousSystem[]) {
     const geoCoordinates = autonomousSystems.map(as => asCoordinatesMap[as]);
-    let countryCodes: CountryCode[] = []
-    for (const geoCoordinate of geoCoordinates) {
-        countryCodes.push(await getCountryFromCoordinates(geoCoordinate));
-    }
+    const countryCodes = geoCoordinates.map(gc => getCountryFromCoordinates(gc));
     console.log("[updateWorldMap]: (Possibly unknown) countries found on path: ", countryCodes);
 
     // purging any duplicate or unknown countries, such that they don't appear in the URL
