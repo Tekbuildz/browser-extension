@@ -1,10 +1,11 @@
 import {proxyAddress, proxyPathUsagePath} from "../background_helpers/proxy_handler.js";
 import {GlobalStrictMode, PerSiteStrictMode} from "../shared/utilities.js";
 import type {IsolationDomain} from "./isolation_domain.js";
-import {asCountryMap, getASName, toAutonomousSystem} from "./autonomous_system_utils.js";
+import {asCoordinatesMap, getASName, toAutonomousSystem} from "./autonomous_system_utils.js";
 import {getISDCountryFlagPath, getISDName, toIsolationDomain} from "./isolation_domain_utils.js";
 import type {AutonomousSystem} from "./autonomous_system.js";
 import {CountryCode} from "./country_code.js";
+import {getCountryFromCoordinates} from "./country_code_utils.js";
 
 // types
 type PerDomainPathUsage = { Domain: string, Path: string[], Strategy: string };
@@ -185,7 +186,11 @@ function showNoPathUsageAvailableMessage(message: string) {
 // World Map
 // ====================
 async function updateWorldMap(autonomousSystems: AutonomousSystem[]) {
-    const countryCodes = autonomousSystems.map(as => asCountryMap[as]);
+    const geoCoordinates = autonomousSystems.map(as => asCoordinatesMap[as]);
+    let countryCodes: CountryCode[] = []
+    for (const geoCoordinate of geoCoordinates) {
+        countryCodes.push(await getCountryFromCoordinates(geoCoordinate));
+    }
     console.log("[updateWorldMap]: (Possibly unknown) countries found on path: ", countryCodes);
 
     // purging any duplicate or unknown countries, such that they don't appear in the URL
