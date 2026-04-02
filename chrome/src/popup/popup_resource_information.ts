@@ -27,6 +27,7 @@ const noPathUsageAvailableContainer = document.getElementById("no-path-usage-ava
 const pathUsageContainer = document.getElementById("path-usage-container") as HTMLDivElement;
 const noPathUsageAvailable = document.getElementById("no-path-usage-available") as HTMLParagraphElement;
 // world map
+const resourceInformationTabInput = document.getElementById("tab-website-information") as HTMLInputElement;
 const worldMapLink = document.getElementById("world-map-link") as HTMLAnchorElement;
 const worldMapContainer = document.getElementById("world-map-container") as HTMLDivElement;
 
@@ -47,6 +48,15 @@ export async function initializeResourceAndPathInformation(_hostname: string, re
 
     // update path usage for current domain
     await updatePathUsage();
+
+    // since the zoom-function relies on the SVG having already been rendered, only call
+    // it when the tab that contains the map is selected (otherwise, due to the tab being
+    // "display: none", the SVG is not rendered and bounding box computations cannot be
+    // performed)
+    resourceInformationTabInput.addEventListener("change", () => {
+        if (!resourceInformationTabInput.checked) return;
+        requestAnimationFrame(() => zoomToHighlightedCountries());
+    });
 }
 
 /**
@@ -213,4 +223,50 @@ async function updateWorldMap(autonomousSystems: AutonomousSystem[]) {
             pathElement.classList.add("highlight");
         }
     }
+}
+
+/**
+ * Computes the bounding box around all highlighted countries and zooms the map SVG in on this bounding box.
+ *
+ * NOTE: This function requires that the SVG has already been rendered, i.e. no ancestor can be for example
+ * set to `display: none`.
+ */
+function zoomToHighlightedCountries(paddingPercent = 0.05): void {
+    const worldMapSvg = worldMapContainer.getElementsByTagName("svg")[0];
+    const highlighted = worldMapSvg.querySelectorAll<SVGPathElement>("path.highlight");
+
+    if (highlighted.length === 0) {
+        return;
+    }
+
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+
+    highlighted.forEach((path) => {
+        const bbox = path.getBBox();
+
+        minX = Math.min(minX, bbox.x);
+        minY = Math.min(minY, bbox.y);
+        maxX = Math.max(maxX, bbox.x + bbox.width);
+        maxY = Math.max(maxY, bbox.y + bbox.height);
+    });
+
+    const width = maxX - minX;
+    const height = maxY - minY;
+
+    // padding around bounding box
+    const padX = width * paddingPercent;
+    const padY = height * paddingPercent;
+
+    const viewBoxX = minX - padX;
+    const viewBoxY = minY - padY;
+    const viewBoxWidth = width + padX * 2;
+    const viewBoxHeight = height + padY * 2;
+
+    worldMapSvg.setAttribute(
+        "viewBox",
+        `${viewBoxX} ${viewBoxY} ${viewBoxWidth} ${viewBoxHeight}`
+    );
 }
