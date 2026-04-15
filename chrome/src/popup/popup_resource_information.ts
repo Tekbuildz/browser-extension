@@ -226,12 +226,13 @@ async function updateWorldMap(autonomousSystems: AutonomousSystem[]) {
 }
 
 /**
- * Computes the bounding box around all highlighted countries and zooms the map SVG in on this bounding box.
+ * Zooms the map to highlighted countries while maintaining the original aspect ratio
+ * and enforcing a minimum zoom level relative to the map's total size.
  *
- * NOTE: This function requires that the SVG has already been rendered, i.e. no ancestor can be for example
- * set to `display: none`.
+ * @param paddingPercent extra space around the country (default 5%).
+ * @param minWidthPercent the minimum width of the zoom window relative to the original map width (default 10%).
  */
-function zoomToHighlightedCountries(paddingPercent = 0.05): void {
+function zoomToHighlightedCountries(paddingPercent = 0.05, minWidthPercent = 0.10) {
     const worldMapSvg = worldMapContainer.getElementsByTagName("svg")[0];
     const highlighted = worldMapSvg.querySelectorAll<SVGPathElement>("path.highlight");
 
@@ -239,34 +240,55 @@ function zoomToHighlightedCountries(paddingPercent = 0.05): void {
         return;
     }
 
+    // get the original map dimensions and aspect ratio
+    const originalViewBox = worldMapSvg.viewBox.baseVal;
+    const mapAspectRatio = originalViewBox.width / originalViewBox.height;
+
+    // calculate the raw bounding box of highlighted elements
     let minX = Infinity;
     let minY = Infinity;
     let maxX = -Infinity;
     let maxY = -Infinity;
 
     highlighted.forEach((path) => {
-        const bbox = path.getBBox();
-
-        minX = Math.min(minX, bbox.x);
-        minY = Math.min(minY, bbox.y);
-        maxX = Math.max(maxX, bbox.x + bbox.width);
-        maxY = Math.max(maxY, bbox.y + bbox.height);
+        const boundingBox = path.getBBox();
+        minX = Math.min(minX, boundingBox.x);
+        minY = Math.min(minY, boundingBox.y);
+        maxX = Math.max(maxX, boundingBox.x + boundingBox.width);
+        maxY = Math.max(maxY, boundingBox.y + boundingBox.height);
     });
 
-    const width = maxX - minX;
-    const height = maxY - minY;
+    const contentWidth = maxX - minX;
+    const contentHeight = maxY - minY;
+    const centerX = minX + contentWidth / 2;
+    const centerY = minY + contentHeight / 2;
 
-    // padding around bounding box
-    const padX = width * paddingPercent;
-    const padY = height * paddingPercent;
+    // add padding
+    let finalWidth = contentWidth * (1 + paddingPercent * 2);
+    let finalHeight = contentHeight * (1 + paddingPercent * 2);
 
-    const viewBoxX = minX - padX;
-    const viewBoxY = minY - padY;
-    const viewBoxWidth = width + padX * 2;
-    const viewBoxHeight = height + padY * 2;
+    // enforce same aspect ratio as the original map by expanding the shorter dimension (never crop content)
+    if (finalWidth / finalHeight > mapAspectRatio)
+        finalHeight = finalWidth / mapAspectRatio;
+    else
+        finalWidth = finalHeight * mapAspectRatio;
+
+    // ensure the map is not zoomed in too far (i.e. respect the minWidthPercent), otherwise users might lose their bearings
+    // on the map if only the outline of a single country is visible
+    const minAllowedWidth = originalViewBox.width * minWidthPercent;
+    if (finalWidth < minAllowedWidth) {
+        finalWidth = minAllowedWidth;
+        // again, maintain the aspect ratio
+        finalHeight = finalWidth / mapAspectRatio;
+    }
+
+    // use the center of the minimal bounding box around the countries to ensure that same center is kept after increasing
+    // the bounding box
+    const viewBoxX = centerX - finalWidth / 2;
+    const viewBoxY = centerY - finalHeight / 2;
 
     worldMapSvg.setAttribute(
         "viewBox",
-        `${viewBoxX} ${viewBoxY} ${viewBoxWidth} ${viewBoxHeight}`
+        `${viewBoxX} ${viewBoxY} ${finalWidth} ${finalHeight}`
     );
 }
